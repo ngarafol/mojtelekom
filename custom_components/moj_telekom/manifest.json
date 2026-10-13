@@ -5,8 +5,11 @@
     "@nix"
   ],
   "config_flow": true,
+  "dependencies": [
+    "frontend"
+  ],
   "documentation": "https://github.com/nix/mojtelekom",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

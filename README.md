@@ -108,6 +108,24 @@ automation:
 
 Vrijednost (bon, MB) je u **stanju** senzora, a tarifa, rok i opcije su u **atributima** — atributi se u karticama ne prikazuju sami. Zato:
 
+### Kartica koja dolazi s integracijom (preporučeno)
+
+Integracija isporučuje i **vlastitu karticu** — učitava se sama, nema ručnog dodavanja resursa ni dodatnih HACS frontenda. Entitete pronalazi sama i grupira ih po broju, pa je dovoljno:
+
+Dashboard → **Uredi** → **+ Dodaj karticu** → nađi **Moj Telekom** u izborniku (ili Ručno) → Spremi:
+
+```yaml
+type: custom:moj-telekom-card
+title: Moj Telekom
+low_balance: 3        # bon ispod ovog iznosa se prikaže crveno
+```
+
+Kartica po broju prikazuje: **bon** (crveno ispod `low_balance`), **bon vrijedi do**, **preostali MB**, **tarifu** i **aktivne opcije** (s rokom ako ga jednom bude). `title` i `low_balance` su opcionalni.
+
+### Ručne kartice (bez dodatka)
+
+Ako želiš ugrađene HA kartice umjesto naše:
+
 ### Kartica s atributima (jedan broj)
 
 Dashboard → **Uredi** → **+ Dodaj karticu** → dolje **Ručno (Manual)** → zalijepi:
@@ -185,6 +203,7 @@ Sesija se drži između osvježavanja, pa je prijava zapravo rijetka. Kad sesija
 | *"Ne mogu se spojiti na Moj Telekom portal"* | Mreža/DNS na HA hostu; je li portal dostupan u browseru. |
 | Senzori su *nedostupno* nakon što su radili | Postavke → Sustav → Dnevnik, filter `moj_telekom`. Najčešće istekla sesija (riješi se sama) ili promjena portala. |
 | Vrijednosti izgledaju prazno | Smanji značajke/interval i pogledaj dnevnik; ako portal promijeni HTML, treba ažurirati parser. |
+| Želiš prijaviti problem | **Postavke → Uređaji i servisi → Moj Telekom → ⋮ → Download diagnostics** — vjerodajnice se redaktiraju, brojevi maskiraju na zadnje 3 znamenke. |
 
 Za dublju dijagnostiku (razvoj/prijava problema):
 
@@ -219,14 +238,14 @@ REST: `GET /api/numbers`, `GET /api/numbers/{msisdn}`, `GET /healthz`.
 ## Razvoj
 
 ```bash
-pytest                          # 25 testova (parsiranje, značajke, drift core-a)
+pytest                          # 28 testova (parsiranje, značajke, drift core-a, logika kartice)
 python3 scripts/sync_core.py    # osvježi core unutar HA integracije
 ```
 
 ```
 mojtelekom/core/                 # modeli (dataclass), klijent portala, fetch_numbers
 mojtelekom/                      # CLI, REST API, WebUI, adapteri (mock/portal)
-custom_components/moj_telekom/   # HA integracija (+ generirana core/ kopija)
+custom_components/moj_telekom/   # HA integracija (+ generirana core/ kopija, www/ kartica, diagnostics.py)
 scripts/sync_core.py             # generira tu kopiju; test pada ako zaostane
 tests/
 ```
