@@ -49,14 +49,14 @@ const hass = {
     "sensor.bprepaid": {
       state: "3.62",
       attributes: {
-        device_class: "monetary", msisdn: "385991234567", tarifa: "Simpa", vrijedi_do: "2027-01-10",
+        device_class: "monetary", feature: "prepaid", msisdn: "385991234567", tarifa: "Simpa", vrijedi_do: "2027-01-10",
         aktivne_opcije: [{ naziv: "Internet Tjedan", vrijedi_do: null }],
       },
     },
-    "sensor.busage": { state: "52440.43", attributes: { unit_of_measurement: "MB" } },
-    "sensor.bvalid_until": { state: "2027-01-10", attributes: { device_class: "date" } },
-    "sensor.boptions": { state: "Internet Tjedan", attributes: {} },
-    "sensor.bstatus": { state: "active", attributes: { msisdn: "385991234567" } },
+    "sensor.busage": { state: "52440.43", attributes: { feature: "usage", unit_of_measurement: "MB" } },
+    "sensor.bvalid_until": { state: "2027-01-10", attributes: { feature: "valid_until", device_class: "date" } },
+    "sensor.boptions": { state: "Internet Tjedan", attributes: { feature: "options" } },
+    "sensor.bstatus": { state: "active", attributes: { feature: "status", msisdn: "385991234567" } },
     "sensor.drugi": { state: "1", attributes: {} },
   },
 };

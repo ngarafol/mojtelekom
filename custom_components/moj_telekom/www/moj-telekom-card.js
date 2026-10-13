@@ -28,10 +28,10 @@ function fmtNumber(value, digits = 2) {
   return num.toLocaleString("hr-HR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
-/** Kojoj značajki pripada entitet — iz unique_id (npr. "<entry>_<msisdn>_valid_until"). */
+/** Kojoj značajki pripada entitet — iz atributa `feature` na senzoru. */
 function featureOf(hass, entityId) {
-  const uniqueId = hass.entities?.[entityId]?.unique_id || "";
-  return KNOWN_FEATURES.find((feature) => uniqueId.endsWith(`_${feature}`)) || null;
+  const feature = hass.states?.[entityId]?.attributes?.feature;
+  return KNOWN_FEATURES.includes(feature) ? feature : null;
 }
 
 /** Grupira entitete integracije po uređaju (broju). */

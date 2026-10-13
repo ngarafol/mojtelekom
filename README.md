@@ -43,6 +43,8 @@ Za svaki broj na računu dobiješ uređaj (naziv = broj) i senzore:
 | `sensor.<broj>_aktivne_opcije` | nazivi aktivnih opcija (ili "nema aktivnih") | `aktivne_opcije` |
 | `sensor.<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
 
+Svaki senzor u atributima nosi `msisdn` i **`feature`** (`status`/`prepaid`/`usage`/`valid_until`/`options`) — po tome ih template kartice i automatizacije mogu pronaći bez upisivanja entity ID-eva.
+
 `<broj>` je međunarodni zapis bez `+`, npr. `sensor.385991234567_prepaid_stanje`. Entity ID možeš preimenovati, a naziv uređaja promijeniti u nešto čitljivije ("Markov mobitel").
 
 Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `valid_until`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se uopće ne dohvaća — `options` recimo štedi jedan zahtjev po broju. Ručno osvježavanje: na kartici integracije ⋮ → **Osvježi** (ili akcija `homeassistant.update_entity`).
@@ -110,6 +112,32 @@ automation:
 
 Vrijednost (bon, MB) je u **stanju** senzora, a tarifa, rok i opcije su u **atributima** — atributi se u karticama ne prikazuju sami. Zato:
 
+### Sve senzore jednog broja — jedan klik (bez YAMLA)
+
+**Postavke → Uređaji i servisi → Moj Telekom → klikni uređaj (broj) → gore desno **+ ADD TO DASHBOARD**.** HA sam napravi karticu sa svim senzorima tog broja i pita na koji dashboard.
+
+Dobivenoj kartici možeš dodati retke s atributima (tarifa, opcije, rok):
+
+```yaml
+type: entities
+title: Moj Telekom — 099 1234567
+entities:
+  - entity: sensor.385991234567_prepaid_stanje
+    name: Bon
+  - entity: sensor.385991234567_vrijedi_do
+    name: Vrijedi do
+  - entity: sensor.385991234567_preostali_promet
+    name: Preostali promet
+  - entity: sensor.385991234567_aktivne_opcije
+    name: Aktivne opcije
+  - entity: sensor.385991234567_status
+    name: Status
+  - type: attribute
+    entity: sensor.385991234567_prepaid_stanje
+    attribute: tarifa
+    name: Tarifa
+```
+
 ### Kartica koja dolazi s integracijom (preporučeno)
 
 Integracija isporučuje i **vlastitu karticu** — učitava se sama, nema ručnog dodavanja resursa ni dodatnih HACS frontenda. Entitete pronalazi sama i grupira ih po broju, pa je dovoljno:
@@ -164,16 +192,19 @@ Ista kartica prikazuje sve brojeve odjednom, s uredno formatiranim datumima i op
 type: markdown
 title: Moj Telekom
 content: |-
-  {% for s in states.sensor | selectattr('entity_id', 'search', '_prepaid_stanje') | sort(attribute='entity_id') %}
-  {% set do = state_attr(s.entity_id, 'vrijedi_do') %}
-  {% set opts = state_attr(s.entity_id, 'aktivne_opcije') %}
-  {% set usage = states('sensor.' + (s.object_id | replace('_prepaid_stanje', '_potrosnja_data'))) %}
-  ### {{ state_attr(s.entity_id, 'msisdn') }}
-  - **Bon:** {{ s.state }} EUR{% if do %} (vrijedi do {{ (do | as_datetime).strftime('%d.%m.%Y') }}){% endif %}
-  - **Tarifa:** {{ state_attr(s.entity_id, 'tarifa') or '—' }}
-  - **Opcije:** {{ opts | map(attribute='naziv') | join(', ') if opts else '—' }}
-  {% if usage not in ['unknown', 'unavailable'] %}- **Preostalo:** {{ usage }} MB
-  {% endif %}
+  {# svi senzori ove integracije nose atribut `feature` i `msisdn` #}
+  {% set nasi = states.sensor | selectattr('attributes.feature', 'defined') | list %}
+  {% for ms in nasi | map(attribute='attributes.msisdn') | unique | list %}
+  {% set s = nasi | selectattr('attributes.msisdn', 'equalto', ms) | list %}
+  {% set bon = s | selectattr('attributes.feature', 'equalto', 'prepaid') | first %}
+  {% set rok = s | selectattr('attributes.feature', 'equalto', 'valid_until') | first %}
+  {% set promet = s | selectattr('attributes.feature', 'equalto', 'usage') | first %}
+  {% set opcije = s | selectattr('attributes.feature', 'equalto', 'options') | first %}
+  ### {{ ms }}
+  - **Bon:** {{ bon.state }} EUR{% if bon is defined and bon.attributes.tarifa %} · {{ bon.attributes.tarifa }}{% endif %}
+  - **Vrijedi do:** {% if rok is defined and rok.state not in ['unknown', 'unavailable'] %}{{ (rok.state | as_datetime).strftime('%d.%m.%Y') }}{% else %}—{% endif %}
+  - **Preostali promet:** {% if promet is defined and promet.state not in ['unknown', 'unavailable'] %}{{ promet.state }} MB{% else %}—{% endif %}
+  - **Opcije:** {{ opcije.state if opcije is defined else '—' }}
   {% endfor %}
 ```
 

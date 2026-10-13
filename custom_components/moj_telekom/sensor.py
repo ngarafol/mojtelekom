@@ -129,6 +129,9 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
         number = self._number or {}
         attrs: dict[str, Any] = {
             "msisdn": self._msisdn,
+            # Kojoj značajki senzor pripada (status | prepaid | usage | valid_until | options).
+            # Korisno za template kartice i automatizacije koje ne žele pisati entity ID-eve.
+            "feature": self._feature,
             "status": number.get("status"),
             "tarifa": number.get("tariff"),
         }

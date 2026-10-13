@@ -56,3 +56,9 @@ def test_entities_are_created_only_for_sensor_features():
         if isinstance(node, ast.Name) and node.id == "sensor_features"
     ]
     assert uses_filtered, "entiteti se moraju stvarati samo za `sensor_features`, ne za sve značajke"
+
+
+def test_sensors_expose_feature_attribute():
+    """Kartica i README templatei pronalaze senzore po atributu `feature` — ne mijenjaj to bez ažuriranja oboje."""
+    source = SENSOR_PY.read_text(encoding="utf-8")
+    assert '"feature": self._feature' in source
