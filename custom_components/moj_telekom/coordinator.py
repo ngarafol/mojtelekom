@@ -18,7 +18,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_MIN,
     DOMAIN,
 )
-from .core import AuthError, PortalClient, fetch_numbers, to_dict
+from .core import AuthError, PortalClient, fetch_numbers, normalize_features, to_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class MojTelekomCoordinator(DataUpdateCoordinator[list[dict]]):
             ),
         )
         self._client = PortalClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
-        self._features = entry.options.get(CONF_FEATURES, DEFAULT_FEATURES)
+        self._features = normalize_features(entry.options.get(CONF_FEATURES, DEFAULT_FEATURES))
 
     async def _async_update_data(self) -> list[dict]:
         try:
@@ -47,6 +47,12 @@ class MojTelekomCoordinator(DataUpdateCoordinator[list[dict]]):
             raise UpdateFailed(str(err)) from err
         except (aiohttp.ClientError, TimeoutError) as err:
             raise UpdateFailed(f"Dohvat s portala nije uspio: {err}") from err
+        if not numbers:
+            # Tiho prazno stanje je najgori ishod: korisnik ne vidi ni grešku ni entitete.
+            raise UpdateFailed(
+                "Portal nije vratio ni jedan broj. Provjeri da račun ima mobilne usluge; "
+                "ako ima, pošalji dijagnostiku (Uređaji → Moj Telekom → Download diagnostics)."
+            )
         return [to_dict(number) for number in numbers]
 
     async def async_close(self) -> None:

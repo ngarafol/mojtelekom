@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -11,6 +12,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_FEATURES, DEFAULT_FEATURES, DOMAIN
 from .coordinator import MojTelekomCoordinator
+from .core import normalize_features
+
+_LOGGER = logging.getLogger(__name__)
 
 # feature -> (oznaka, ikona, device class, state class)
 FEATURE_META: dict[str, tuple[str, str, SensorDeviceClass | None, SensorStateClass | None]] = {
@@ -24,10 +28,20 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: MojTelekomCoordinator = hass.data[DOMAIN][entry.entry_id]
-    features = entry.options.get(CONF_FEATURES, DEFAULT_FEATURES)
+    configured = entry.options.get(CONF_FEATURES, DEFAULT_FEATURES)
+    features = normalize_features(configured)
+    if sorted(features) != sorted(configured):
+        _LOGGER.warning("Moj Telekom: popis značajki u opcijama je nepotpun (%s) — koristim %s", configured, features)
+
+    numbers = coordinator.data or []
+    if not numbers:
+        _LOGGER.warning(
+            "Moj Telekom: portal nije vratio ni jedan broj, pa nema ni entiteta. "
+            "Provjeri da račun ima mobilne usluge i pogledaj ranije poruke u dnevniku."
+        )
     async_add_entities(
         MojTelekomSensor(coordinator, entry, number["msisdn"], feature)
-        for number in coordinator.data or []
+        for number in numbers
         for feature in features
     )
 

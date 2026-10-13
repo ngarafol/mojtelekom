@@ -2,7 +2,7 @@
 import asyncio
 from datetime import date
 
-from mojtelekom.core import Option, fetch_numbers, to_dict
+from mojtelekom.core import Option, fetch_numbers, normalize_features, to_dict
 from mojtelekom.core.portal import ServiceRef, parse_service_data
 from tests.test_portal_parsing import MOREDATA
 
@@ -61,3 +61,11 @@ def test_to_dict_is_json_ready_for_ha_attributes():
     assert data["prepaid"]["valid_until"] == "2026-12-31"  # datum kao ISO string
     assert data["options"] == [{"name": "Internet Tjedan", "valid_until": None}]
     assert isinstance(data["fetched_at"], str)
+
+
+def test_normalize_features_keeps_status_and_drops_unknown():
+    # Prazan odabir u HA opcijama ne smije ostaviti integraciju bez entiteta.
+    assert normalize_features([]) == ["status"]
+    assert normalize_features(None) == ["status"]
+    assert normalize_features(["options"]) == ["options", "status"]
+    assert normalize_features(["prepaid", "nepoznato"]) == ["prepaid", "status"]

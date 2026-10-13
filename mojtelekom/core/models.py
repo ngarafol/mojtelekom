@@ -58,6 +58,18 @@ def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
     )
 
 
+def normalize_features(features: Iterable[str] | None) -> list[str]:
+    """Očisti popis značajki i osiguraj da `status` uvijek ostane.
+
+    Prazan odabir u HA opcijama (npr. slučajno odznačeno sve) inače ostavi integraciju
+    bez ijednog entiteta — tiho i zbunjujuće.
+    """
+    wanted = [feature for feature in (features or []) if feature in FEATURES]
+    if "status" not in wanted:
+        wanted.append("status")
+    return wanted
+
+
 def _jsonable(value):
     if isinstance(value, (date, datetime)):
         return value.isoformat()
