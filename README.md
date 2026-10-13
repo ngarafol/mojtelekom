@@ -102,15 +102,59 @@ automation:
           message: "Nema više aktivnih opcija na 099 1234567."
 ```
 
-**Kartica na dashboardu:**
+### Gdje su entiteti
+
+**Postavke → Uređaji i servisi → Moj Telekom** → klikni uređaj (naziv je broj) → popis svih entiteta. Entity ID i atribute vidiš klikom na entitet → ⚙ (zupčanik). Za brzi pregled: **Alatni programi za razvojne programere → Stanja** i u filtar upiši `prepaid_stanje`.
+
+Vrijednost (bon, MB) je u **stanju** senzora, a tarifa, rok i opcije su u **atributima** — atributi se u karticama ne prikazuju sami. Zato:
+
+### Kartica s atributima (jedan broj)
+
+Dashboard → **Uredi** → **+ Dodaj karticu** → dolje **Ručno (Manual)** → zalijepi:
 
 ```yaml
 type: entities
-title: Moj Telekom
+title: Moj Telekom — 099 1234567
 entities:
   - entity: sensor.385991234567_prepaid_stanje
+    name: Bon
   - entity: sensor.385991234567_potrosnja_data
+    name: Preostali MB
   - entity: sensor.385991234567_status
+    name: Status
+  - type: attribute
+    entity: sensor.385991234567_prepaid_stanje
+    attribute: tarifa
+    name: Tarifa
+  - type: attribute
+    entity: sensor.385991234567_prepaid_stanje
+    attribute: vrijedi_do
+    name: Bon vrijedi do
+  - type: attribute
+    entity: sensor.385991234567_prepaid_stanje
+    attribute: aktivne_opcije
+    name: Aktivne opcije
+```
+
+### Kartica sa svim brojevima (Markdown)
+
+Ista kartica prikazuje sve brojeve odjednom, s uredno formatiranim datumima i opcijama:
+
+```yaml
+type: markdown
+title: Moj Telekom
+content: |-
+  {% for s in states.sensor | selectattr('entity_id', 'search', '_prepaid_stanje') | sort(attribute='entity_id') %}
+  {% set do = state_attr(s.entity_id, 'vrijedi_do') %}
+  {% set opts = state_attr(s.entity_id, 'aktivne_opcije') %}
+  {% set usage = states('sensor.' + (s.object_id | replace('_prepaid_stanje', '_potrosnja_data'))) %}
+  ### {{ state_attr(s.entity_id, 'msisdn') }}
+  - **Bon:** {{ s.state }} EUR{% if do %} (vrijedi do {{ (do | as_datetime).strftime('%d.%m.%Y') }}){% endif %}
+  - **Tarifa:** {{ state_attr(s.entity_id, 'tarifa') or '—' }}
+  - **Opcije:** {{ opts | map(attribute='naziv') | join(', ') if opts else '—' }}
+  {% if usage not in ['unknown', 'unavailable'] %}- **Preostalo:** {{ usage }} MB
+  {% endif %}
+  {% endfor %}
 ```
 
 ## Kako čita podatke
