@@ -37,15 +37,17 @@ Za svaki broj na računu dobiješ uređaj (naziv = broj) i senzore:
 
 | Senzor | Stanje | Atributi |
 |---|---|---|
-| `sensor.<broj>_prepaid_stanje` | iznos bona (EUR) | `tarifa`, `aktivne_opcije`, `vrijedi_do`, `status`, `msisdn` |
-| `sensor.<broj>_vrijedi_do` | datum do kojeg broj/bon vrijedi | — |
-| `sensor.<broj>_preostali_promet` | preostali besplatni MB | `data_remaining_mb` |
-| `sensor.<broj>_aktivne_opcije` | nazivi aktivnih opcija (ili "nema aktivnih") | `aktivne_opcije` |
-| `sensor.<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
+| `sensor.mojtelekom_<broj>_prepaid_stanje` | iznos bona (EUR) | `tarifa`, `aktivne_opcije`, `vrijedi_do`, `status`, `msisdn` |
+| `sensor.mojtelekom_<broj>_vrijedi_do` | datum do kojeg broj/bon vrijedi | — |
+| `sensor.mojtelekom_<broj>_preostali_promet` | preostali besplatni MB | `data_remaining_mb` |
+| `sensor.mojtelekom_<broj>_aktivne_opcije` | nazivi aktivnih opcija (ili "nema aktivnih") | `aktivne_opcije` |
+| `sensor.mojtelekom_<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
 
 Svaki senzor u atributima nosi `msisdn` i **`feature`** (`status`/`prepaid`/`usage`/`valid_until`/`options`) — po tome ih template kartice i automatizacije mogu pronaći bez upisivanja entity ID-eva.
 
-`<broj>` je međunarodni zapis bez `+`, npr. `sensor.385991234567_prepaid_stanje`. Entity ID možeš preimenovati, a naziv uređaja promijeniti u nešto čitljivije ("Markov mobitel").
+`<broj>` je međunarodni zapis bez `+`, pa entity ID izgleda npr. `sensor.mojtelekom_385991234567_prepaid_stanje`. **Prefiks `mojtelekom_` je tu namjerno** — lako filtriraš entitete (u tražilici upiši `mojtelekom`) i slažeš kartice (`entity_id: "*mojtelekom*"`). Naziv uređaja je "Moj Telekom 099 1234567", a možeš ga preimenovati (npr. "Markov mobitel").
+
+> **Nadogradnja s starije verzije:** HA pamti entity ID-eve, pa oni ostaju stari (`sensor.<broj>_prepaid_stanje`). Da dobiješ prefiks, **obriši integraciju i dodaj je ponovno** (opcije se resetiraju na zadano), ili preimenuj entitete ručno.
 
 Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `valid_until`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se uopće ne dohvaća — `options` recimo štedi jedan zahtjev po broju. Ručno osvježavanje: na kartici integracije ⋮ → **Osvježi** (ili akcija `homeassistant.update_entity`).
 
@@ -58,14 +60,14 @@ automation:
   - alias: "Moj Telekom: nizak bon"
     triggers:
       - trigger: numeric_state
-        entity_id: sensor.385991234567_prepaid_stanje
+        entity_id: sensor.mojtelekom_385991234567_prepaid_stanje
         below: 3
     actions:
       - action: notify.mobile_app
         data:
           title: "Malo ti je bona"
           message: >-
-            Na 099 1234567 ostalo je {{ states('sensor.385991234567_prepaid_stanje') }} EUR.
+            Na 099 1234567 ostalo je {{ states('sensor.mojtelekom_385991234567_prepaid_stanje') }} EUR.
 ```
 
 **Podsjetnik 3 dana prije isteka bona:**
@@ -79,7 +81,7 @@ automation:
     conditions:
       - condition: template
         value_template: >-
-          {% set v = state_attr('sensor.385991234567_prepaid_stanje', 'vrijedi_do') %}
+          {% set v = state_attr('sensor.mojtelekom_385991234567_prepaid_stanje', 'vrijedi_do') %}
           {{ v is not none and (v | as_datetime | as_local).date() == (now().date() + timedelta(days=3)) }}
     actions:
       - action: notify.mobile_app
@@ -94,12 +96,12 @@ automation:
   - alias: "Moj Telekom: opcija je istekla"
     triggers:
       - trigger: state
-        entity_id: sensor.385991234567_prepaid_stanje
+        entity_id: sensor.mojtelekom_385991234567_prepaid_stanje
         attribute: aktivne_opcije
     conditions:
       - condition: template
         value_template: >-
-          {{ state_attr('sensor.385991234567_prepaid_stanje', 'aktivne_opcije') | length == 0 }}
+          {{ state_attr('sensor.mojtelekom_385991234567_prepaid_stanje', 'aktivne_opcije') | length == 0 }}
     actions:
       - action: notify.mobile_app
         data:
@@ -110,7 +112,7 @@ automation:
 
 **Postavke → Uređaji i servisi → Moj Telekom** → klikni uređaj (naziv je broj) → popis svih entiteta. Entity ID i atribute vidiš klikom na entitet → ⚙ (zupčanik). Za brzi pregled: **Alatni programi za razvojne programere → Stanja** i u filtar upiši `prepaid_stanje`.
 
-Vrijednost (bon, MB) je u **stanju** senzora, a tarifa, rok i opcije su u **atributima** — atributi se u karticama ne prikazuju sami. Zato:
+Svi entity ID-evi počinju s `mojtelekom_`, a u atributima svaki senzor nosi `feature` i `msisdn` — po tome ih filtriraš. Vrijednost (bon, MB, datum) je u **stanju** senzora, a tarifa i opcije su i u **atributima** — atributi se u karticama ne prikazuju sami. Zato:
 
 ### Sve senzore jednog broja — jedan klik (bez YAMLA)
 
@@ -122,18 +124,18 @@ Dobivenoj kartici možeš dodati retke s atributima (tarifa, opcije, rok):
 type: entities
 title: Moj Telekom — 099 1234567
 entities:
-  - entity: sensor.385991234567_prepaid_stanje
+  - entity: sensor.mojtelekom_385991234567_prepaid_stanje
     name: Bon
-  - entity: sensor.385991234567_vrijedi_do
+  - entity: sensor.mojtelekom_385991234567_vrijedi_do
     name: Vrijedi do
-  - entity: sensor.385991234567_preostali_promet
+  - entity: sensor.mojtelekom_385991234567_preostali_promet
     name: Preostali promet
-  - entity: sensor.385991234567_aktivne_opcije
+  - entity: sensor.mojtelekom_385991234567_aktivne_opcije
     name: Aktivne opcije
-  - entity: sensor.385991234567_status
+  - entity: sensor.mojtelekom_385991234567_status
     name: Status
   - type: attribute
-    entity: sensor.385991234567_prepaid_stanje
+    entity: sensor.mojtelekom_385991234567_prepaid_stanje
     attribute: tarifa
     name: Tarifa
 ```
@@ -164,22 +166,22 @@ Dashboard → **Uredi** → **+ Dodaj karticu** → dolje **Ručno (Manual)** �
 type: entities
 title: Moj Telekom — 099 1234567
 entities:
-  - entity: sensor.385991234567_prepaid_stanje
+  - entity: sensor.mojtelekom_385991234567_prepaid_stanje
     name: Bon
-  - entity: sensor.385991234567_potrosnja_data
+  - entity: sensor.mojtelekom_385991234567_potrosnja_data
     name: Preostali MB
-  - entity: sensor.385991234567_status
+  - entity: sensor.mojtelekom_385991234567_status
     name: Status
   - type: attribute
-    entity: sensor.385991234567_prepaid_stanje
+    entity: sensor.mojtelekom_385991234567_prepaid_stanje
     attribute: tarifa
     name: Tarifa
   - type: attribute
-    entity: sensor.385991234567_prepaid_stanje
+    entity: sensor.mojtelekom_385991234567_prepaid_stanje
     attribute: vrijedi_do
     name: Bon vrijedi do
   - type: attribute
-    entity: sensor.385991234567_prepaid_stanje
+    entity: sensor.mojtelekom_385991234567_prepaid_stanje
     attribute: aktivne_opcije
     name: Aktivne opcije
 ```

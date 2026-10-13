@@ -28,6 +28,13 @@ function fmtNumber(value, digits = 2) {
   return num.toLocaleString("hr-HR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+/** "385991234567" -> "099 1234567" (samo za prikaz). */
+function fmtMsisdn(msisdn) {
+  return msisdn && msisdn.startsWith("385") && msisdn.length === 12
+    ? `0${msisdn.slice(3, 5)} ${msisdn.slice(5)}`
+    : msisdn;
+}
+
 /** Kojoj značajki pripada entitet — iz atributa `feature` na senzoru. */
 function featureOf(hass, entityId) {
   const feature = hass.states?.[entityId]?.attributes?.feature;
@@ -117,9 +124,12 @@ class MojTelekomCard extends HTMLElement {
       this._row("Aktivne opcije", this._optionsText(group)),
       this._row("Status", status && status.state !== "active" ? status.state : null),
     ].join("");
+    // Broj ispod naziva ima smisla samo ako uređaj nije preimenovan (tada naziv ne sadrži broj).
+    const national = fmtMsisdn(group.msisdn);
+    const subtitle = national && !String(group.name).includes(national) ? national : "";
     return `<div class="number">
       <div class="name">${escapeHtml(group.name)}</div>
-      <div class="msisdn">${escapeHtml(group.msisdn || "")}</div>
+      <div class="msisdn">${escapeHtml(subtitle)}</div>
       <dl>${rows}</dl>
     </div>`;
   }
@@ -151,4 +161,5 @@ window.MojTelekomCard = MojTelekomCard;
 window.MojTelekomCard.groupNumbers = groupNumbers;
 window.MojTelekomCard.fmtDate = fmtDate;
 window.MojTelekomCard.fmtNumber = fmtNumber;
+window.MojTelekomCard.fmtMsisdn = fmtMsisdn;
 window.MojTelekomCard.version = MOJ_TELEKOM_VERSION;

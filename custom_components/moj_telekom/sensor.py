@@ -13,7 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_FEATURES, DEFAULT_FEATURES, DOMAIN
 from .coordinator import MojTelekomCoordinator
-from .core import FEATURES, normalize_features
+from .core import FEATURES, national_number, normalize_features
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,11 +70,17 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
         self._attr_state_class = state_class
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, msisdn)},
-            name=self._number.get("alias") or msisdn,
+            name=self._number.get("alias") or f"Moj Telekom {national_number(msisdn)}",
             manufacturer="Hrvatski Telekom",
             model="Moj Telekom broj",
             entry_type=DeviceEntryType.SERVICE,
         )
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Entity ID-evi su oblika sensor.mojtelekom_<broj>_<znacajka> — lako ih je filtrirati
+        i slagati kartice (`entity_id: "*mojtelekom*"`)."""
+        return f"mojtelekom_{self._msisdn}_{self._feature}"
 
     @property
     def _number(self) -> dict[str, Any] | None:

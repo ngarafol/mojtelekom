@@ -61,6 +61,13 @@ def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
     )
 
 
+def national_number(msisdn: str) -> str:
+    """'385998331732' -> '099 8331732' (samo za prikaz); nepoznat oblik vraća kako je došao."""
+    if msisdn.startswith("385") and len(msisdn) == 12:
+        return f"0{msisdn[3:5]} {msisdn[5:]}"
+    return msisdn
+
+
 def normalize_features(features: Iterable[str] | None) -> list[str]:
     """Očisti popis značajki i osiguraj da `status` uvijek ostane.
 

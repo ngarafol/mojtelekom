@@ -62,3 +62,11 @@ def test_sensors_expose_feature_attribute():
     """Kartica i README templatei pronalaze senzore po atributu `feature` — ne mijenjaj to bez ažuriranja oboje."""
     source = SENSOR_PY.read_text(encoding="utf-8")
     assert '"feature": self._feature' in source
+
+
+def test_entity_ids_get_mojtelekom_prefix():
+    """Prefiks omogućuje filtriranje i kartice tipa entity_id: "*mojtelekom*"."""
+    source = SENSOR_PY.read_text(encoding="utf-8")
+    assert "def suggested_object_id" in source
+    assert 'return f"mojtelekom_{self._msisdn}_{self._feature}"' in source
+    assert "national_number(" in source  # ime uređaja: "Moj Telekom 099 8331732"

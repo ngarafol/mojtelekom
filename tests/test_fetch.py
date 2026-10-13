@@ -84,3 +84,10 @@ def test_valid_until_is_fetched_when_only_that_feature_is_on():
 def test_valid_until_is_dropped_when_feature_is_off():
     numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid"]))
     assert numbers[0].valid_until is None
+
+
+def test_national_number_for_display():
+    from mojtelekom.core import national_number
+
+    assert national_number("385998331732") == "099 8331732"
+    assert national_number("123") == "123"  # nepoznat oblik se ne kvari

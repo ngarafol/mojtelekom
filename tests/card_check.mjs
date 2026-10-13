@@ -122,4 +122,20 @@ empty.setConfig({});
 empty.hass = { entities: {}, states: {}, devices: {} };
 assert.match(empty.shadowRoot.innerHTML, /Još nema podataka/);
 
+// 8) broj se ne ponavlja ispod naziva ako je uređaj nazvan po broju
+assert.match(html, /Moj Telekom 099 1234567|385991234567/);
+const namedByNumber = structuredClone(hass);
+namedByNumber.devices.dev1.name = "Moj Telekom 099 1234567";
+const prettyCard = new Card();
+prettyCard.setConfig({});
+prettyCard.hass = namedByNumber;
+assert.doesNotMatch(prettyCard.shadowRoot.innerHTML, /<div class="msisdn">\S/, "broj se ne smije ponavljati kad je uređaj nazvan po njemu");
+// a ako je uređaj preimenovan, broj se prikazuje
+const renamedDevice = structuredClone(hass);
+renamedDevice.devices.dev1.name = "Markov mobitel";
+const renamedCard = new Card();
+renamedCard.setConfig({});
+renamedCard.hass = renamedDevice;
+assert.match(renamedCard.shadowRoot.innerHTML, /099 1234567/, "preimenovan uređaj mora pokazati broj (nacionalni zapis)");
+
 console.log("kartica: sve provjere prošle");
