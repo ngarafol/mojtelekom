@@ -129,7 +129,7 @@ namedByNumber.devices.dev1.name = "Moj Telekom 099 1234567";
 const prettyCard = new Card();
 prettyCard.setConfig({});
 prettyCard.hass = namedByNumber;
-assert.doesNotMatch(prettyCard.shadowRoot.innerHTML, /<div class="msisdn">\S/, "broj se ne smije ponavljati kad je uređaj nazvan po njemu");
+assert.doesNotMatch(prettyCard.shadowRoot.innerHTML, /<div class="msisdn">[^<]/, "broj se ne smije ponavljati kad je uređaj nazvan po njemu");
 // a ako je uređaj preimenovan, broj se prikazuje
 const renamedDevice = structuredClone(hass);
 renamedDevice.devices.dev1.name = "Markov mobitel";
