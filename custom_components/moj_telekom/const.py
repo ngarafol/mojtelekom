@@ -20,6 +20,7 @@ DEFAULT_FEATURES = list(FEATURES)
 FEATURE_LABELS = {
     "status": "Status broja",
     "prepaid": "Prepaid stanje",
-    "usage": "Potrošnja paketa",
+    "usage": "Preostali promet",
+    "valid_until": "Vrijedi do",
     "options": "Aktivne opcije",
 }

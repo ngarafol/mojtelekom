@@ -28,15 +28,16 @@ async def fetch_numbers(client: PortalClient, features: Iterable[str] = FEATURES
             continue
 
         prepaid = usage = None
+        valid_until = None
         if ref.service_type == "MobilePrepaid":
-            # Stranica stanja daje i preostale MB i rok SIM kartice, pa je tražimo samo
-            # ako je barem jedna od tih značajki uključena (inače je čisti gubitak).
-            free_mb = valid_until = None
-            if wanted & {"prepaid", "usage"}:
+            # Stranica stanja daje preostale MB i "vrijedi do", pa je tražimo samo ako je
+            # barem jedna od tih značajki uključena (inače je čisti gubitak).
+            free_mb = None
+            if wanted & {"prepaid", "usage", "valid_until"}:
                 free_mb, valid_until = await client.account(ref.service_id)
             usage = Usage(data_remaining_mb=free_mb)
             if data.balance is not None:
-                prepaid = Prepaid(balance=data.balance, currency=data.currency, valid_until=valid_until)
+                prepaid = Prepaid(balance=data.balance, currency=data.currency)
         elif data.balance is not None:
             prepaid = Prepaid(balance=data.balance, currency=data.currency)
 
@@ -46,6 +47,7 @@ async def fetch_numbers(client: PortalClient, features: Iterable[str] = FEATURES
                 status="active",
                 fetched_at=now,
                 tariff=data.tariff,
+                valid_until=valid_until,
                 # Opcije tražimo samo ako su uključene — štedi jedan request po broju.
                 options=await client.options(ref.service_id) if "options" in wanted else [],
                 prepaid=prepaid,

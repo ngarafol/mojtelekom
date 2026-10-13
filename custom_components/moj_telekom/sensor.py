@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -21,8 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 # na ostalim senzorima (zato je u core.FEATURES, ali ne u ovoj mapi).
 FEATURE_META: dict[str, tuple[str, str, SensorDeviceClass | None, SensorStateClass | None]] = {
     "prepaid": ("Prepaid stanje", "mdi:cash", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
-    "usage": ("Potrošnja data", "mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
+    "usage": ("Preostali promet", "mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
+    "valid_until": ("Vrijedi do", "mdi:calendar-check", SensorDeviceClass.DATE, None),
     "status": ("Status", "mdi:sim", None, None),
+    "options": ("Aktivne opcije", "mdi:playlist-check", None, None),
 }
 SENSOR_FEATURES = tuple(feature for feature in FEATURES if feature in FEATURE_META)
 
@@ -97,6 +100,13 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
                 usage = number.get("usage")
                 # Preostali besplatni MB; ako ih portal ne navede, stanje ostaje nepoznato.
                 return usage.get("data_remaining_mb") if usage else None
+            case "valid_until":
+                # HA za device_class DATE traži date objekt, ne string.
+                value = number.get("valid_until")
+                return date.fromisoformat(value) if value else None
+            case "options":
+                names = [option.get("name") for option in number.get("options", [])]
+                return ", ".join(names) if names else "nema aktivnih"
             case "status":
                 return number.get("status")
         return None
@@ -127,8 +137,8 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
                 {"naziv": option.get("name"), "vrijedi_do": option.get("valid_until")}
                 for option in number["options"]
             ]
-        if (prepaid := number.get("prepaid")) and self._feature == "prepaid":
-            attrs["vrijedi_do"] = prepaid.get("valid_until")
+        if self._feature == "prepaid":
+            attrs["vrijedi_do"] = number.get("valid_until")
         if (usage := number.get("usage")) and self._feature == "usage":
             attrs["data_remaining_mb"] = usage.get("data_remaining_mb")
         return attrs

@@ -45,7 +45,7 @@ function card(n) {
   if (n.prepaid !== null && n.prepaid !== undefined) {
     const low = n.prepaid.balance <= 1;
     parts.push(row('Prepaid', fmtEur(n.prepaid.balance), low));
-    if (n.prepaid.valid_until) parts.push(row('Vrijedi do', new Date(n.prepaid.valid_until).toLocaleDateString('hr-HR')));
+    if (n.valid_until) parts.push(row('Vrijedi do', new Date(n.valid_until).toLocaleDateString('hr-HR')));
   }
   if (n.usage && n.usage.data_remaining_mb !== null && n.usage.data_remaining_mb !== undefined) {
     parts.push(row('Preostalo MB', Number(n.usage.data_remaining_mb).toLocaleString('hr-HR'), n.usage.data_remaining_mb < 100));

@@ -25,8 +25,8 @@ def main() -> None:
             cols = [n.msisdn, n.alias or n.tariff or "-", n.status]
             if n.prepaid is not None:
                 cols.append(f"{n.prepaid.balance:.2f} {n.prepaid.currency}")
-                if n.prepaid.valid_until:
-                    cols.append(f"vrijedi do {n.prepaid.valid_until:%d.%m.%Y}")
+            if n.valid_until:
+                cols.append(f"vrijedi do {n.valid_until:%d.%m.%Y}")
             if n.usage is not None and n.usage.data_remaining_mb is not None:
                 cols.append(f"preostalo {n.usage.data_remaining_mb:.1f} MB")
             if n.options:

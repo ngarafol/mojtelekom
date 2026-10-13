@@ -37,13 +37,15 @@ Za svaki broj na računu dobiješ uređaj (naziv = broj) i senzore:
 
 | Senzor | Stanje | Atributi |
 |---|---|---|
-| `sensor.<broj>_prepaid_stanje` | iznos bona (EUR) | `vrijedi_do`, `tarifa`, `aktivne_opcije`, `status`, `msisdn` |
-| `sensor.<broj>_potrosnja_data` | preostali besplatni MB | `data_remaining_mb` |
+| `sensor.<broj>_prepaid_stanje` | iznos bona (EUR) | `tarifa`, `aktivne_opcije`, `vrijedi_do`, `status`, `msisdn` |
+| `sensor.<broj>_vrijedi_do` | datum do kojeg broj/bon vrijedi | — |
+| `sensor.<broj>_preostali_promet` | preostali besplatni MB | `data_remaining_mb` |
+| `sensor.<broj>_aktivne_opcije` | nazivi aktivnih opcija (ili "nema aktivnih") | `aktivne_opcije` |
 | `sensor.<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
 
 `<broj>` je međunarodni zapis bez `+`, npr. `sensor.385991234567_prepaid_stanje`. Entity ID možeš preimenovati, a naziv uređaja promijeniti u nešto čitljivije ("Markov mobitel").
 
-Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se uopće ne dohvaća — `options` recimo štedi jedan zahtjev po broju. Ručno osvježavanje: na kartici integracije ⋮ → **Osvježi** (ili akcija `homeassistant.update_entity`).
+Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `valid_until`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se uopće ne dohvaća — `options` recimo štedi jedan zahtjev po broju. Ručno osvježavanje: na kartici integracije ⋮ → **Osvježi** (ili akcija `homeassistant.update_entity`).
 
 ## Primjeri upotrebe
 
@@ -120,7 +122,7 @@ title: Moj Telekom
 low_balance: 3        # bon ispod ovog iznosa se prikaže crveno
 ```
 
-Kartica po broju prikazuje: **bon** (crveno ispod `low_balance`), **bon vrijedi do**, **preostali MB**, **tarifu** i **aktivne opcije** (s rokom ako ga jednom bude). `title` i `low_balance` su opcionalni.
+Kartica po broju prikazuje: **bon** (crveno ispod `low_balance`), **vrijedi do**, **preostali promet**, **tarifu**, **aktivne opcije** i status ako nije `active`. `title` i `low_balance` su opcionalni.
 
 ### Ručne kartice (bez dodatka)
 
@@ -182,7 +184,7 @@ Prijava ide na Keycloak SSO (`sso.hrvatskitelekom.hr`), a stanje se čita iz HTM
 | Podatak | Izvor |
 |---|---|
 | Bon, bonus račun, tarifa | `/moredata/?serviceType=MobilePrepaid&serviceId=…` |
-| Preostali besplatni MB, `SIM kartica vrijedi do` | `/korisnici-bonova/stanje-racuna?serviceid=…` |
+| Preostali besplatni MB, `SIM kartica vrijedi do` (→ `vrijedi_do`) | `/korisnici-bonova/stanje-racuna?serviceid=…` |
 | Aktivne opcije | `/korisnici-bonova/opcije?serviceid=…` (aktivna nosi `DeactivateOption(...)`) |
 
 Sesija se drži između osvježavanja, pa je prijava zapravo rijetka. Kad sesija istekne, portal vrati javnu login stranicu s **HTTP 200** — da se to ne pretvori tiho u "nema podataka", svaki dohvat provjerava marker koji dolazi samo na traženoj stranici, pa slijedi ponovna prijava i još jedan pokušaj.
@@ -190,7 +192,8 @@ Sesija se drži između osvježavanja, pa je prijava zapravo rijetka. Kad sesija
 ## Ograničenja
 
 - **Nema statusa blokade** — portal prikazuje samo aktivne usluge.
-- **Nema roka pojedine opcije.** Provjereno na svim mjestima (opcije, stanje računa, uredjivanje usluga, pregled plaćanja): portal taj podatak ne objavljuje, ima ga samo mobilna aplikacija. Zato koristi automatizaciju na promjenu `aktivne_opcije`.
+- **Nema roka pojedine opcije.** Provjereno na svim mjestima (opcije, stanje računa, uredjivanje usluga, pregled plaćanja): portal taj podatak ne objavljuje, ima ga samo mobilna aplikacija. Zato koristi automatizaciju na promjenu senzora `aktivne_opcije` (npr. kad postane "nema aktivnih").
+- **Datum `vrijedi_do`** je ono što portal zove "SIM kartica vrijedi do" / "Bon vrijedi do" — datum do kojeg broj vrijedi.
 - **Bez računa i bez postpaid usluga** — integracija čita stanje brojeva (prepaid bon, MB, opcije).
 - **Bez 2FA/captcha** i bez automatske ponovne prijave nakon promjene lozinke (obriši i ponovno dodaj integraciju).
 - Portal se može promijeniti bez najave — zato je parsiranje pokriveno testovima i postoji `mojtelekom dump` za pregled stvarnih stranica.
@@ -227,7 +230,7 @@ mojtelekom dump             # spremi HTML stranice portala u mt-debug/ (razvoj p
 | Var | Zadano | Opis |
 |---|---|---|
 | `MT_ADAPTER` | `mock` | `mock` (lažni podaci) ili `portal` (stvarni podaci) |
-| `MT_FEATURES` | sve | Zarezom odvojene: `status,prepaid,usage,options` |
+| `MT_FEATURES` | sve | Zarezom odvojene: `status,prepaid,usage,valid_until,options` |
 | `MT_TTL` | `60` | Cache u sekundama (čuva portal od ponovljenih dohvata) |
 | `MT_API_KEY` | prazno | Ako je postavljen, `/api/*` traži `X-API-Key` header |
 | `MT_USERNAME` / `MT_PASSWORD` | prazno | Telekom ID za `portal` adapter |
@@ -238,7 +241,7 @@ REST: `GET /api/numbers`, `GET /api/numbers/{msisdn}`, `GET /healthz`.
 ## Razvoj
 
 ```bash
-pytest                          # 28 testova (parsiranje, značajke, drift core-a, logika kartice)
+pytest                          # 34 testa (parsiranje, značajke, drift core-a, logika kartice, CLI)
 python3 scripts/sync_core.py    # osvježi core unutar HA integracije
 ```
 

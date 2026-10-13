@@ -10,14 +10,13 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime
 
-FEATURES = ("status", "prepaid", "usage", "options")
+FEATURES = ("status", "prepaid", "usage", "valid_until", "options")
 
 
 @dataclass
 class Prepaid:
     balance: float
     currency: str = "EUR"
-    valid_until: date | None = None
 
 
 @dataclass
@@ -43,6 +42,8 @@ class NumberInfo:
     fetched_at: datetime
     alias: str | None = None
     tariff: str | None = None
+    # "SIM kartica / bon vrijedi do" — datum do kojeg je broj aktivan.
+    valid_until: date | None = None
     options: list[Option] = field(default_factory=list)
     prepaid: Prepaid | None = None
     usage: Usage | None = None
@@ -53,6 +54,7 @@ def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
     wanted = set(features)
     return replace(
         number,
+        valid_until=number.valid_until if "valid_until" in wanted else None,
         prepaid=number.prepaid if "prepaid" in wanted else None,
         usage=number.usage if "usage" in wanted else None,
         options=number.options if "options" in wanted else [],

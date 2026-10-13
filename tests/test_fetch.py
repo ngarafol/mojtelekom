@@ -31,7 +31,7 @@ class FakeClient:
 
 
 def test_fetch_numbers_builds_full_model():
-    numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid", "usage", "options"]))
+    numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid", "usage", "valid_until", "options"]))
 
     assert len(numbers) == 1  # Dialup preskočen
     number = numbers[0]
@@ -40,7 +40,7 @@ def test_fetch_numbers_builds_full_model():
     assert number.status == "active"
     assert number.prepaid.balance == 3.62
     assert number.prepaid.currency == "EUR"
-    assert number.prepaid.valid_until == date(2026, 12, 31)
+    assert number.valid_until == date(2026, 12, 31)
     assert number.usage.data_remaining_mb == 52440.43
     assert [option.name for option in number.options] == ["Internet Tjedan"]
 
@@ -50,15 +50,16 @@ def test_fetch_numbers_skips_disabled_features_at_source():
     numbers = asyncio.run(fetch_numbers(client, ["status"]))
 
     assert numbers[0].prepaid is None and numbers[0].usage is None and numbers[0].options == []
+    assert numbers[0].valid_until is None
     # account/options se ni ne dohvaćaju kad su značajke isključene
     assert {call[0] for call in client.calls} == {"service"}
 
 
 def test_to_dict_is_json_ready_for_ha_attributes():
-    numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid", "options"]))
+    numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid", "valid_until", "options"]))
     data = to_dict(numbers[0])
 
-    assert data["prepaid"]["valid_until"] == "2026-12-31"  # datum kao ISO string
+    assert data["valid_until"] == "2026-12-31"  # datum kao ISO string
     assert data["options"] == [{"name": "Internet Tjedan", "valid_until": None}]
     assert isinstance(data["fetched_at"], str)
 
@@ -69,3 +70,17 @@ def test_normalize_features_keeps_status_and_drops_unknown():
     assert normalize_features(None) == ["status"]
     assert normalize_features(["options"]) == ["options", "status"]
     assert normalize_features(["prepaid", "nepoznato"]) == ["prepaid", "status"]
+
+
+def test_valid_until_is_fetched_when_only_that_feature_is_on():
+    client = FakeClient()
+    numbers = asyncio.run(fetch_numbers(client, ["valid_until"]))
+
+    assert numbers[0].valid_until == date(2026, 12, 31)
+    assert numbers[0].prepaid is None and numbers[0].usage is None
+    assert "account" in [call[0] for call in client.calls], "datum dolazi sa stranice stanja"
+
+
+def test_valid_until_is_dropped_when_feature_is_off():
+    numbers = asyncio.run(fetch_numbers(FakeClient(), ["status", "prepaid"]))
+    assert numbers[0].valid_until is None

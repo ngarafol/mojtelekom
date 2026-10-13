@@ -1,13 +1,17 @@
 /**
  * Moj Telekom kartica — dolazi s integracijom, nije potreban HACS frontend ni ručno
- * dodavanje resursa. Prikazuje sve brojeve: bon, preostali MB, tarifu, rok bona i opcije.
+ * dodavanje resursa. Prikazuje sve brojeve: bon, do kada vrijedi, preostali promet,
+ * tarifu, aktivne opcije i status.
  *
  * Entitete nalazi sama (preko `hass.entities`, platforma `moj_telekom`) i grupira ih po
  * uređaju, pa je dovoljno upisati:
  *   type: custom:moj-telekom-card
  */
 
-const MOJ_TELEKOM_VERSION = "0.3.0";
+const MOJ_TELEKOM_VERSION = "0.4.0";
+
+// Redoslijed je bitan: "valid_until" sadrži donju crtu, pa se traži prije ostalih.
+const KNOWN_FEATURES = ["valid_until", "prepaid", "usage", "options", "status"];
 
 /** "2027-01-10" -> "10.01.2027." */
 function fmtDate(value) {
@@ -24,7 +28,13 @@ function fmtNumber(value, digits = 2) {
   return num.toLocaleString("hr-HR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
-/** Grupira entitete integracije po uređaju (broju). Vrsta se prepoznaje po device_class/unit. */
+/** Kojoj značajki pripada entitet — iz unique_id (npr. "<entry>_<msisdn>_valid_until"). */
+function featureOf(hass, entityId) {
+  const uniqueId = hass.entities?.[entityId]?.unique_id || "";
+  return KNOWN_FEATURES.find((feature) => uniqueId.endsWith(`_${feature}`)) || null;
+}
+
+/** Grupira entitete integracije po uređaju (broju). */
 function groupNumbers(hass) {
   const groups = new Map();
   for (const entry of Object.values(hass.entities || {})) {
@@ -38,11 +48,7 @@ function groupNumbers(hass) {
         msisdn: state.attributes.msisdn,
       });
     }
-    const group = groups.get(key);
-    const deviceClass = state.attributes.device_class;
-    if (deviceClass === "monetary") group.prepaid = state;
-    else if (state.attributes.unit_of_measurement === "MB") group.usage = state;
-    else group.status = state;
+    groups.get(key)[featureOf(hass, entry.entity_id) || "status"] = state;
   }
   return [...groups.values()];
 }
@@ -83,26 +89,32 @@ class MojTelekomCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 1 + 3 * Math.max(1, groupNumbers(this._hass || {}).length);
+    return 1 + 4 * Math.max(1, groupNumbers(this._hass || {}).length);
   }
 
   _row(label, value, className) {
-    return value == null ? "" : `<dt>${escapeHtml(label)}</dt><dd${className ? ` class="${className}"` : ""}>${escapeHtml(value)}</dd>`;
+    return value == null || value === ""
+      ? ""
+      : `<dt>${escapeHtml(label)}</dt><dd${className ? ` class="${className}"` : ""}>${escapeHtml(value)}</dd>`;
+  }
+
+  _optionsText(group) {
+    if (group.options) return group.options.state;
+    const raw = group.prepaid?.attributes.aktivne_opcije;
+    return raw?.length ? raw.map((option) => option.naziv).join(", ") : null;
   }
 
   _numberBlock(group) {
-    const { prepaid, usage, status } = group;
+    const { prepaid, usage, valid_until: until, status } = group;
     const balance = prepaid ? Number(prepaid.state) : NaN;
     const low = Number.isFinite(balance) && balance <= Number(this._config.low_balance);
-    const options = prepaid?.attributes.aktivne_opcije;
+    const untilValue = until ? until.state : prepaid?.attributes.vrijedi_do;
     const rows = [
       this._row("Bon", prepaid ? `${fmtNumber(balance)} EUR` : null, low ? "low" : ""),
-      this._row("Bon vrijedi do", prepaid ? fmtDate(prepaid.attributes.vrijedi_do) : null),
-      this._row("Preostalo MB", usage ? fmtNumber(usage.state, 0) : null),
+      this._row("Vrijedi do", fmtDate(untilValue)),
+      this._row("Preostali promet", usage ? `${fmtNumber(usage.state, 0)} MB` : null),
       this._row("Tarifa", prepaid?.attributes.tarifa),
-      this._row("Opcije", options?.length
-        ? options.map((o) => (o.vrijedi_do ? `${o.naziv} (do ${fmtDate(o.vrijedi_do)})` : o.naziv)).join(", ")
-        : null),
+      this._row("Aktivne opcije", this._optionsText(group)),
       this._row("Status", status && status.state !== "active" ? status.state : null),
     ].join("");
     return `<div class="number">
@@ -131,7 +143,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "moj-telekom-card",
   name: "Moj Telekom",
-  description: "Bon, preostali MB, tarifa, rok bona i aktivne opcije za sve tvoje brojeve.",
+  description: "Bon, do kada vrijedi, preostali promet, tarifa i aktivne opcije za sve brojeve.",
   preview: false,
 });
 window.MojTelekomCard = MojTelekomCard;
