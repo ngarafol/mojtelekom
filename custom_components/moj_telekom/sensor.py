@@ -12,16 +12,19 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_FEATURES, DEFAULT_FEATURES, DOMAIN
 from .coordinator import MojTelekomCoordinator
-from .core import normalize_features
+from .core import FEATURES, normalize_features
 
 _LOGGER = logging.getLogger(__name__)
 
-# feature -> (oznaka, ikona, device class, state class)
+# Značajka -> (oznaka, ikona, device class, state class). SAMO značajke koje daju senzor!
+# `options` namjerno nije ovdje: nema svoj senzor, nego dolazi kao atribut `aktivne_opcije`
+# na ostalim senzorima (zato je u core.FEATURES, ali ne u ovoj mapi).
 FEATURE_META: dict[str, tuple[str, str, SensorDeviceClass | None, SensorStateClass | None]] = {
     "prepaid": ("Prepaid stanje", "mdi:cash", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
     "usage": ("Potrošnja data", "mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
     "status": ("Status", "mdi:sim", None, None),
 }
+SENSOR_FEATURES = tuple(feature for feature in FEATURES if feature in FEATURE_META)
 
 
 async def async_setup_entry(
@@ -33,6 +36,7 @@ async def async_setup_entry(
     if sorted(features) != sorted(configured):
         _LOGGER.warning("Moj Telekom: popis značajki u opcijama je nepotpun (%s) — koristim %s", configured, features)
 
+    sensor_features = [feature for feature in features if feature in SENSOR_FEATURES]
     numbers = coordinator.data or []
     if not numbers:
         _LOGGER.warning(
@@ -42,7 +46,7 @@ async def async_setup_entry(
     async_add_entities(
         MojTelekomSensor(coordinator, entry, number["msisdn"], feature)
         for number in numbers
-        for feature in features
+        for feature in sensor_features
     )
 
 
