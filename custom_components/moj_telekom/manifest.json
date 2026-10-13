@@ -11,5 +11,5 @@
   "documentation": "https://github.com/nix/mojtelekom",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "version": "0.4.1"
+  "version": "0.6.0"
 }

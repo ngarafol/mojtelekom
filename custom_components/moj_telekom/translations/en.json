@@ -3,16 +3,17 @@
     "step": {
       "user": {
         "title": "Moj Telekom",
-        "description": "Prijava Telekom ID podacima (isto kao na moj.hrvatskitelekom.hr). Podaci ostaju lokalno.",
+        "description": "Prijava Telekom ID podacima (isto kao na moj.hrvatskitelekom.hr). Ako lozinku ostaviš praznom, čita se iz okoline procesa (MT_USERNAME / MT_PASSWORD) i tada se u Home Assistantu ne sprema nikakva tajna.",
         "data": {
           "username": "Telekom ID (korisničko ime ili e-mail)",
-          "password": "Lozinka"
+          "password": "Lozinka (prazno = iz MT_PASSWORD u okolini)"
         }
       }
     },
     "error": {
       "auth": "Prijava nije prošla — provjeri Telekom ID i lozinku (ili račun traži 2FA/captcha).",
-      "cannot_connect": "Ne mogu se spojiti na Moj Telekom portal."
+      "cannot_connect": "Ne mogu se spojiti na Moj Telekom portal.",
+      "no_credentials": "Upiši lozinku ili postavi MT_USERNAME i MT_PASSWORD u okolini procesa."
     },
     "abort": {
       "already_configured": "Ovaj Telekom ID je već dodan."

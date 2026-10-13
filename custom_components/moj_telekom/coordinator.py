@@ -18,7 +18,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_MIN,
     DOMAIN,
 )
-from .core import AuthError, PortalClient, fetch_numbers, normalize_features, to_dict
+from .core import AuthError, PortalClient, fetch_numbers, normalize_features, resolve_credentials, to_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,10 +35,22 @@ class MojTelekomCoordinator(DataUpdateCoordinator[list[dict]]):
                 minutes=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MIN)
             ),
         )
-        self._client = PortalClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+        self._entry_data = dict(entry.data)
         self._features = normalize_features(entry.options.get(CONF_FEATURES, DEFAULT_FEATURES))
+        # Klijent se stvara pri prvom dohvaćanju: lozinka može doći iz okoline (MT_PASSWORD),
+        # pa u config entryju tada nije spremljena nikakva tajna.
+        self._client: PortalClient | None = None
 
     async def _async_update_data(self) -> list[dict]:
+        credentials = resolve_credentials(self._entry_data)
+        if credentials is None:
+            raise UpdateFailed(
+                "Nema podataka za prijavu: upiši lozinku u integraciji ili postavi "
+                "MT_USERNAME i MT_PASSWORD u okolinu procesa."
+            )
+        if self._client is None:
+            self._client = PortalClient(*credentials)
+
         try:
             numbers = await fetch_numbers(self._client, self._features)
         except AuthError as err:
@@ -56,4 +68,6 @@ class MojTelekomCoordinator(DataUpdateCoordinator[list[dict]]):
         return [to_dict(number) for number in numbers]
 
     async def async_close(self) -> None:
-        await self._client.close()
+        if self._client is not None:
+            await self._client.close()
+            self._client = None

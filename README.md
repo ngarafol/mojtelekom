@@ -19,7 +19,22 @@ Praktično to znači da u HA-u možeš:
 - **Telekom ID** (korisničko ime ili e-mail + lozinka) — isti podaci kojima se prijavljuješ na portal
 - Račun **bez 2FA**: ako portal pri prijavi traži jednokratni PIN, integracija to ne podržava
 
-Podaci za prijavu spremaju se u HA config entry (`config/.storage/core.config_entries`) i koriste isključivo za prijavu na HT portal. Ništa se ne šalje trećim stranama — jedini odlazni promet ide na `moj.hrvatskitelekom.hr` i `sso.hrvatskitelekom.hr`.
+### Gdje ti je lozinka (i kako smanjiti rizik)
+
+- Koristi se **samo** za prijavu na HT portal i SSO — nikamo drugo se ne šalje, **ne završava u logu** (u debug dumpu se bilježe samo *imena* polja), a **dijagnostika je redaktira**. Sesijski kolačić drži se **samo u memoriji**.
+- U HA-u se sprema u `config/.storage/core.config_entries`, a HA config entryje drži **u čistom tekstu** (bez šifriranja). Taj fajl ulazi i u **backupe**. To je HA-ovo standardno ponašanje za integracije koje traže korisničke podatke — HA nema API za šifriranu pohranu vjerodajnica.
+- **Ako želiš da tajna ne bude ni u `.storage` ni u backupu:** postavi `MT_USERNAME` / `MT_PASSWORD` u okolinu procesa, a polje lozinke u integraciji ostavi **prazno**. Tada HA ne sprema nikakvu tajnu (radi na **HA Container / HA Core**; na HA OS-u se env varijable ne mogu lako postaviti):
+
+  ```bash
+  docker run -d --name homeassistant -e MT_USERNAME='korisnik' -e MT_PASSWORD='lozinka' homeassistant/home-assistant
+  # ili --env-file /path/secrets.env  (chmod 600)
+  ```
+
+  Env varijable nisu tajna pohrana (vidljive su korisniku koji vrti proces), ali **ne idu u backup**.
+- Dodatno: uključi **šifrirane backupe** u HA-u, drži `config/` na šifriranom disku i ne stavljaj lozinku u `configuration.yaml` / `secrets.yaml`.
+- Za CLI: lozinku daj kroz `read -rs` ili env varijablu, nikako u naredbeni redak (ostaje u povijesti).
+
+Ništa se ne šalje trećim stranama — jedini odlazni promet ide na `moj.hrvatskitelekom.hr` i `sso.hrvatskitelekom.hr`.
 
 ## Instalacija
 
@@ -274,7 +289,7 @@ REST: `GET /api/numbers`, `GET /api/numbers/{msisdn}`, `GET /healthz`.
 ## Razvoj
 
 ```bash
-pytest                          # 34 testa (parsiranje, značajke, drift core-a, logika kartice, CLI)
+pytest                          # 44 testa (parsiranje, značajke, drift core-a, kartica, CLI, čuvari tajni)
 python3 scripts/sync_core.py    # osvježi core unutar HA integracije
 ```
 
