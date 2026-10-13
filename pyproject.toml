@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mojtelekom"
+version = "0.1.0"
+description = "Checker stanja brojeva iz Moj Telekom aplikacije (neslužbeni klijent)"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29", "aiohttp>=3.9"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+mojtelekom = "mojtelekom.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mojtelekom*"]
+
+[tool.setuptools.package-data]
+mojtelekom = ["web/*.html"]

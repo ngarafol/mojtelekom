@@ -1,0 +1,11 @@
+{
+  "domain": "moj_telekom",
+  "name": "Moj Telekom",
+  "codeowners": ["@nix"],
+  "config_flow": true,
+  "documentation": "https://github.com/nix/mojtelekom",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.2.0"
+}

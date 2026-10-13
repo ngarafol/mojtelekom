@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moj Telekom checker</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background: #10141a; color: #e6e9ee; margin: 0; padding: 2rem; }
+  h1 { font-size: 1.3rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; max-width: 60rem; }
+  .card { background: #1a2029; border: 1px solid #2a323e; border-radius: 10px; padding: 1rem 1.2rem; }
+  .num { font-weight: 600; }
+  .alias { color: #8b95a5; font-size: .85rem; }
+  .status { display: inline-block; font-size: .75rem; padding: .1rem .5rem; border-radius: 99px; margin-left: .4rem; vertical-align: middle; }
+  .active { background: #1d3a24; color: #6ee787; }
+  .blocked, .expired { background: #402329; color: #ff8182; }
+  dl { margin: .6rem 0 0; font-size: .9rem; }
+  dt { color: #8b95a5; float: left; clear: left; width: 45%; }
+  dd { margin: 0 0 .2rem 45%; }
+  .warn { color: #ffb86b; }
+  #err { color: #ff8182; }
+  button { background: #2a323e; color: inherit; border: 0; border-radius: 8px; padding: .4rem .9rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Moj Telekom checker <button id="refresh">Osvježi</button></h1>
+<p id="err"></p>
+<div class="grid" id="grid"></div>
+<script>
+const fmtEur = v => v.toFixed(2).replace('.', ',') + ' €';
+// Tekstovi dolaze s portala (vanjski izvor) — nikad ih ne ubacujemo u HTML sirove.
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const row = (k, v, warn = false) => `<dt>${esc(k)}</dt><dd${warn ? ' class="warn"' : ''}>${v}</dd>`;
+const STATUSES = ['active', 'blocked', 'expired', 'unknown'];
+
+function card(n) {
+  const status = STATUSES.includes(n.status) ? n.status : 'unknown';
+  const parts = [row('Status', esc(n.status))];
+  if (n.options && n.options.length) {
+    parts.push(row('Opcije', n.options.map(o =>
+      esc(o.name) + (o.valid_until ? ` <span class="alias">do ${esc(new Date(o.valid_until).toLocaleDateString('hr-HR'))}</span>` : '')
+    ).join('<br>')));
+  }
+  if (n.prepaid !== null && n.prepaid !== undefined) {
+    const low = n.prepaid.balance <= 1;
+    parts.push(row('Prepaid', fmtEur(n.prepaid.balance), low));
+    if (n.prepaid.valid_until) parts.push(row('Vrijedi do', new Date(n.prepaid.valid_until).toLocaleDateString('hr-HR')));
+  }
+  if (n.usage) {
+    const pct = n.usage.data_total_mb ? Math.round(100 * n.usage.data_used_mb / n.usage.data_total_mb) : null;
+    if (n.usage.data_remaining_mb !== null && n.usage.data_remaining_mb !== undefined) {
+      parts.push(row('Preostalo MB', n.usage.data_remaining_mb.toLocaleString('hr-HR'), n.usage.data_remaining_mb < 100));
+    } else {
+      parts.push(row('Data', pct !== null ? `${pct}% (${n.usage.data_used_mb} MB)` : `${n.usage.data_used_mb} MB`, pct !== null && pct > 90));
+    }
+    if (n.usage.minutes_total || n.usage.minutes_used) parts.push(row('Minute', n.usage.minutes_used + (n.usage.minutes_total ? ` / ${n.usage.minutes_total}` : '')));
+    if (n.usage.sms_total || n.usage.sms_used) parts.push(row('SMS', n.usage.sms_used + (n.usage.sms_total ? ` / ${n.usage.sms_total}` : '')));
+  }
+  if (n.invoice && n.invoice.amount_due > 0) parts.push(row('Račun dospio', fmtEur(n.invoice.amount_due), true));
+  return `<div class="card"><span class="num">${esc(n.alias || n.msisdn)}</span>
+    <span class="status ${status}">${esc(n.status)}</span>
+    <div class="alias">${esc(n.msisdn)}${n.tariff ? ' • ' + esc(n.tariff) : ''}</div><dl>${parts.join('')}</dl></div>`;
+}
+
+async function load() {
+  document.getElementById('err').textContent = '';
+  try {
+    const r = await fetch('/api/numbers');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    document.getElementById('grid').innerHTML = (await r.json()).map(card).join('');
+  } catch (e) {
+    document.getElementById('err').textContent = 'Greška pri dohvatu: ' + e.message;
+  }
+}
+document.getElementById('refresh').onclick = () => load(true);
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

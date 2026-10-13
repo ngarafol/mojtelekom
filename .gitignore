@@ -1,0 +1,15 @@
+__pycache__/
+*.egg-info/
+.venv/
+dist/
+.pytest_cache/
+tools/
+captures/
+http2/
+.npm-cache/
+work/
+.jadx-config/
+.jadx-cache/
+mt-debug/
+login-debug.html
+.venv-ha/

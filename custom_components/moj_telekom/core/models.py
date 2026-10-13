@@ -1,0 +1,90 @@
+# GENERIRANO iz mojtelekom/core/models.py — ne uređivati; pokreni scripts/sync_core.py
+"""Podatkovni modeli i značajke.
+
+Namjerno obični dataclassovi (bez pydantica) i bez ijednog HA uvoza: isti kod koriste
+CLI/API i Home Assistant integracija, a HA nema pydantic u osnovnim ovisnostima.
+"""
+from __future__ import annotations
+
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass, field, replace
+from datetime import date, datetime
+
+FEATURES = ("status", "prepaid", "usage", "invoice", "options")
+
+
+@dataclass
+class Prepaid:
+    balance: float
+    currency: str = "EUR"
+    valid_until: date | None = None
+
+
+@dataclass
+class Usage:
+    data_used_mb: float = 0.0
+    data_total_mb: float | None = None
+    # Portal prikazuje preostale "besplatne MB", ne potrošene.
+    data_remaining_mb: float | None = None
+    minutes_used: int = 0
+    minutes_total: int | None = None
+    sms_used: int = 0
+    sms_total: int | None = None
+
+
+@dataclass
+class Invoice:
+    amount_due: float = 0.0
+    currency: str = "EUR"
+    due_date: date | None = None
+    status: str = "paid"  # paid | due | overdue
+
+
+@dataclass
+class Option:
+    """Aktivna opcija/dodatak i rok ako ga portal navede (zasad ga ne navodi)."""
+
+    name: str
+    valid_until: date | None = None
+
+
+@dataclass
+class NumberInfo:
+    """Stanje jednog broja. Isključene značajke budu None / prazna lista (vidi filter_features)."""
+
+    msisdn: str
+    status: str  # active | blocked | expired | unknown
+    fetched_at: datetime
+    alias: str | None = None
+    tariff: str | None = None
+    options: list[Option] = field(default_factory=list)
+    prepaid: Prepaid | None = None
+    usage: Usage | None = None
+    invoice: Invoice | None = None
+
+
+def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
+    """Zadrži samo uključene značajke (status je uvijek prisutan)."""
+    wanted = set(features)
+    return replace(
+        number,
+        prepaid=number.prepaid if "prepaid" in wanted else None,
+        usage=number.usage if "usage" in wanted else None,
+        invoice=number.invoice if "invoice" in wanted else None,
+        options=number.options if "options" in wanted else [],
+    )
+
+
+def _jsonable(value):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {key: _jsonable(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_jsonable(item) for item in value]
+    return value
+
+
+def to_dict(number: NumberInfo) -> dict:
+    """Rječnik spreman za JSON i za HA atribute (datumi kao ISO stringovi)."""
+    return _jsonable(asdict(number))
