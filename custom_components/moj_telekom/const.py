@@ -21,6 +21,5 @@ FEATURE_LABELS = {
     "status": "Status broja",
     "prepaid": "Prepaid stanje",
     "usage": "Potrošnja paketa",
-    "invoice": "Računi",
     "options": "Aktivne opcije",
 }

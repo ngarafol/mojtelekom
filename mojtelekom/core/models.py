@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime
 
-FEATURES = ("status", "prepaid", "usage", "invoice", "options")
+FEATURES = ("status", "prepaid", "usage", "options")
 
 
 @dataclass
@@ -21,22 +21,8 @@ class Prepaid:
 
 @dataclass
 class Usage:
-    data_used_mb: float = 0.0
-    data_total_mb: float | None = None
-    # Portal prikazuje preostale "besplatne MB", ne potrošene.
+    # Portal daje samo preostale "besplatne MB"; minute/SMS za Simpa brojeve piše "Nema podataka".
     data_remaining_mb: float | None = None
-    minutes_used: int = 0
-    minutes_total: int | None = None
-    sms_used: int = 0
-    sms_total: int | None = None
-
-
-@dataclass
-class Invoice:
-    amount_due: float = 0.0
-    currency: str = "EUR"
-    due_date: date | None = None
-    status: str = "paid"  # paid | due | overdue
 
 
 @dataclass
@@ -59,7 +45,6 @@ class NumberInfo:
     options: list[Option] = field(default_factory=list)
     prepaid: Prepaid | None = None
     usage: Usage | None = None
-    invoice: Invoice | None = None
 
 
 def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
@@ -69,7 +54,6 @@ def filter_features(number: NumberInfo, features: Iterable[str]) -> NumberInfo:
         number,
         prepaid=number.prepaid if "prepaid" in wanted else None,
         usage=number.usage if "usage" in wanted else None,
-        invoice=number.invoice if "invoice" in wanted else None,
         options=number.options if "options" in wanted else [],
     )
 

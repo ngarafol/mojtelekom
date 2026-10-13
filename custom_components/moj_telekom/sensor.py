@@ -16,7 +16,6 @@ from .coordinator import MojTelekomCoordinator
 FEATURE_META: dict[str, tuple[str, str, SensorDeviceClass | None, SensorStateClass | None]] = {
     "prepaid": ("Prepaid stanje", "mdi:cash", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
     "usage": ("Potrošnja data", "mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
-    "invoice": ("Račun", "mdi:receipt-text", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
     "status": ("Status", "mdi:sim", None, None),
 }
 
@@ -78,17 +77,8 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
                 return prepaid["balance"] if prepaid else None
             case "usage":
                 usage = number.get("usage")
-                if not usage:
-                    return None
-                # Portal daje preostale "besplatne MB", aplikacija potrošene — prikaži što imamo.
-                if usage.get("data_remaining_mb") is not None:
-                    return usage["data_remaining_mb"]
-                if usage.get("data_total_mb") or usage.get("data_used_mb"):
-                    return usage.get("data_used_mb")
-                return None  # ništa poznato → bez stanja umjesto lažne nule
-            case "invoice":
-                invoice = number.get("invoice")
-                return invoice["amount_due"] if invoice else None
+                # Preostali besplatni MB; ako ih portal ne navede, stanje ostaje nepoznato.
+                return usage.get("data_remaining_mb") if usage else None
             case "status":
                 return number.get("status")
         return None
@@ -104,8 +94,6 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
                 # UnitOfInformation.MEGABYTES, starije UnitOfDataSize.MEGABYTES — literal
                 # radi na objema bez uvjetnog uvoza.
                 return "MB"
-            case "invoice":
-                return (number.get("invoice") or {}).get("currency")
         return None
 
     @property
@@ -124,15 +112,5 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
         if (prepaid := number.get("prepaid")) and self._feature == "prepaid":
             attrs["vrijedi_do"] = prepaid.get("valid_until")
         if (usage := number.get("usage")) and self._feature == "usage":
-            attrs |= {
-                "data_remaining_mb": usage.get("data_remaining_mb"),
-                "data_used_mb": usage.get("data_used_mb"),
-                "data_total_mb": usage.get("data_total_mb"),
-                "minute_iskoristene": usage.get("minutes_used"),
-                "minute_ukupno": usage.get("minutes_total"),
-                "sms_iskoristeni": usage.get("sms_used"),
-                "sms_ukupno": usage.get("sms_total"),
-            }
-        if (invoice := number.get("invoice")) and self._feature == "invoice":
-            attrs |= {"dospijeva": invoice.get("due_date"), "status_racuna": invoice.get("status")}
+            attrs["data_remaining_mb"] = usage.get("data_remaining_mb")
         return attrs

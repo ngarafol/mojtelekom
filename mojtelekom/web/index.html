@@ -47,17 +47,9 @@ function card(n) {
     parts.push(row('Prepaid', fmtEur(n.prepaid.balance), low));
     if (n.prepaid.valid_until) parts.push(row('Vrijedi do', new Date(n.prepaid.valid_until).toLocaleDateString('hr-HR')));
   }
-  if (n.usage) {
-    const pct = n.usage.data_total_mb ? Math.round(100 * n.usage.data_used_mb / n.usage.data_total_mb) : null;
-    if (n.usage.data_remaining_mb !== null && n.usage.data_remaining_mb !== undefined) {
-      parts.push(row('Preostalo MB', n.usage.data_remaining_mb.toLocaleString('hr-HR'), n.usage.data_remaining_mb < 100));
-    } else {
-      parts.push(row('Data', pct !== null ? `${pct}% (${n.usage.data_used_mb} MB)` : `${n.usage.data_used_mb} MB`, pct !== null && pct > 90));
-    }
-    if (n.usage.minutes_total || n.usage.minutes_used) parts.push(row('Minute', n.usage.minutes_used + (n.usage.minutes_total ? ` / ${n.usage.minutes_total}` : '')));
-    if (n.usage.sms_total || n.usage.sms_used) parts.push(row('SMS', n.usage.sms_used + (n.usage.sms_total ? ` / ${n.usage.sms_total}` : '')));
+  if (n.usage && n.usage.data_remaining_mb !== null && n.usage.data_remaining_mb !== undefined) {
+    parts.push(row('Preostalo MB', Number(n.usage.data_remaining_mb).toLocaleString('hr-HR'), n.usage.data_remaining_mb < 100));
   }
-  if (n.invoice && n.invoice.amount_due > 0) parts.push(row('Račun dospio', fmtEur(n.invoice.amount_due), true));
   return `<div class="card"><span class="num">${esc(n.alias || n.msisdn)}</span>
     <span class="status ${status}">${esc(n.status)}</span>
     <div class="alias">${esc(n.msisdn)}${n.tariff ? ' • ' + esc(n.tariff) : ''}</div><dl>${parts.join('')}</dl></div>`;

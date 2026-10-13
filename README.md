@@ -30,11 +30,10 @@ Dobiješ uređaj po broju (naziv = broj) i senzore:
 | Senzor | Stanje | Atributi |
 |---|---|---|
 | `sensor.<broj>_prepaid_stanje` | iznos bona | `vrijedi_do`, `tarifa`, `aktivne_opcije`, `status` |
-| `sensor.<broj>_potrosnja_data` | preostali besplatni MB | `data_remaining_mb`, minute/SMS |
+| `sensor.<broj>_potrosnja_data` | preostali besplatni MB | `data_remaining_mb` |
 | `sensor.<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
-| `sensor.<broj>_racun` | iznos duga | `dospijeva`, `status_racuna` |
 
-Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `invoice`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se ne dohvaća — `options` recimo štedi jedan zahtjev po broju.
+Kroz **Konfiguriraj → Opcije** uključuješ/isključuješ značajke (`status`, `prepaid`, `usage`, `options`) i mijenjaš interval osvježavanja (5–1440 min, zadano 15). Isključena značajka se ne dohvaća — `options` recimo štedi jedan zahtjev po broju.
 
 ## CLI / REST API / WebUI (opcionalno)
 
@@ -48,18 +47,10 @@ mojtelekom dump             # spremi HTML stranice portala u mt-debug/ (razvoj p
 mojtelekom dump /korisnik/uredjivanje-usluga   # + dodatne stranice
 ```
 
-Ili Docker:
-
-```bash
-docker build -t mojtelekom .
-docker run -d -p 8088:8088 -e MT_ADAPTER=portal -e MT_USERNAME=korisnik -e MT_PASSWORD=lozinka \
-  -e MT_API_KEY=tajna --name mojtelekom mojtelekom
-```
-
 | Var | Zadano | Opis |
 |---|---|---|
-| `MT_ADAPTER` | `mock` | `mock` (lažni podaci), `portal` (stvarni podaci), `real` (mobilna app, skeleton) |
-| `MT_FEATURES` | sve | Zarezom odvojene: `status,prepaid,usage,invoice,options` |
+| `MT_ADAPTER` | `mock` | `mock` (lažni podaci) ili `portal` (stvarni podaci) |
+| `MT_FEATURES` | sve | Zarezom odvojene: `status,prepaid,usage,options` |
 | `MT_TTL` | `60` | Cache u sekundama (čuva portal od ponovljenih dohvata) |
 | `MT_API_KEY` | prazno | Ako je postavljen, `/api/*` traži `X-API-Key` header |
 | `MT_USERNAME` / `MT_PASSWORD` | prazno | Telekom ID za `portal` adapter |
@@ -92,7 +83,7 @@ Kad sesija istekne, portal vrati javnu login stranicu s **HTTP 200**, što se la
 ## Razvoj
 
 ```bash
-pytest                                  # 22 testa (parsiranje, feature toggles, drift core-a)
+pytest                                  # 25 testova (parsiranje, feature toggles, drift core-a)
 python3 scripts/sync_core.py            # osvježi core unutar HA integracije
 ```
 
@@ -100,7 +91,7 @@ Struktura:
 
 ```
 mojtelekom/core/     # modeli (dataclass), klijent portala, fetch_numbers — dijeli se
-mojtelekom/          # CLI, REST API, WebUI, adapteri (mock/portal/real)
+mojtelekom/          # CLI, REST API, WebUI, adapteri (mock/portal)
 custom_components/moj_telekom/   # HA integracija (+ generirana core/ kopija)
 scripts/sync_core.py
 tests/

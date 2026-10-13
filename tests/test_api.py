@@ -16,7 +16,6 @@ def test_prepaid_end_to_end_with_feature_filter():
         assert len(data) == 3
         assert data[0]["prepaid"]["balance"] == 12.34
         assert data[0]["usage"] is None
-        assert data[0]["invoice"] is None
         assert data[2]["status"] == "blocked"
 
         r = client.get("/api/numbers/0921234567")  # skraćeni dohvat

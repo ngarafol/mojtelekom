@@ -26,14 +26,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"ok": True, "adapter": settings.adapter, "features": settings.features}
 
     @app.get("/api/numbers", dependencies=[Depends(verify_key)])
-    async def numbers(refresh: bool = False) -> list[NumberInfo]:
-        return await service.snapshot(refresh)
+    async def numbers() -> list[NumberInfo]:
+        return await service.snapshot()
 
     @app.get("/api/numbers/{msisdn}", dependencies=[Depends(verify_key)])
-    async def number(msisdn: str, refresh: bool = False) -> NumberInfo:
+    async def number(msisdn: str) -> NumberInfo:
         # radi i s trunk nulom: "0921234567" i "921234567" pogađaju "385921234567"
         wanted = msisdn.lstrip("+").lstrip("0")
-        for n in await service.snapshot(refresh):
+        for n in await service.snapshot():
             if n.msisdn.endswith(wanted):
                 return n
         raise HTTPException(status_code=404, detail="Broj nije nađen")

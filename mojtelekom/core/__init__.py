@@ -4,28 +4,5 @@ Bez Home Assistant i bez pydantica — namjerno, da ga mogu dijeliti CLI/API i H
 Ova se mapa kopira u `custom_components/moj_telekom/core/` skriptom `scripts/sync_core.py`.
 """
 from .fetch import fetch_numbers
-from .models import (
-    FEATURES,
-    Invoice,
-    NumberInfo,
-    Option,
-    Prepaid,
-    Usage,
-    filter_features,
-    to_dict,
-)
+from .models import FEATURES, NumberInfo, Option, Prepaid, Usage, filter_features, to_dict
 from .portal import AuthError, PortalClient
-
-__all__ = [
-    "FEATURES",
-    "AuthError",
-    "Invoice",
-    "NumberInfo",
-    "Option",
-    "PortalClient",
-    "Prepaid",
-    "Usage",
-    "fetch_numbers",
-    "filter_features",
-    "to_dict",
-]

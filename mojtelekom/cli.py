@@ -27,16 +27,8 @@ def main() -> None:
                 cols.append(f"{n.prepaid.balance:.2f} {n.prepaid.currency}")
                 if n.prepaid.valid_until:
                     cols.append(f"vrijedi do {n.prepaid.valid_until:%d.%m.%Y}")
-            if n.usage is not None:
-                u = n.usage
-                if u.data_remaining_mb is not None:
-                    cols.append(f"preostalo {u.data_remaining_mb:.1f} MB")
-                elif u.data_total_mb:
-                    cols.append(f"{u.data_used_mb:.0f}/{u.data_total_mb:.0f} MB")
-                elif u.minutes_total or u.sms_total:
-                    cols.append(f"min {u.minutes_used}/{u.minutes_total or '?'} | sms {u.sms_used}/{u.sms_total or '?'}")
-            if n.invoice is not None and n.invoice.amount_due > 0:
-                cols.append(f"račun: {n.invoice.amount_due:.2f} {n.invoice.currency} ({n.invoice.status})")
+            if n.usage is not None and n.usage.data_remaining_mb is not None:
+                cols.append(f"preostalo {n.usage.data_remaining_mb:.1f} MB")
             if n.options:
                 cols.append(
                     "opcije: " + ", ".join(

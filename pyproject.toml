@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mojtelekom"
 version = "0.1.0"
-description = "Checker stanja brojeva iz Moj Telekom aplikacije (neslužbeni klijent)"
+description = "Stanje brojeva s Moj Telekom portala (neslužbeni klijent) — HA integracija, CLI i REST"
 requires-python = ">=3.11"
 dependencies = ["fastapi>=0.110", "uvicorn>=0.29", "aiohttp>=3.9"]
 

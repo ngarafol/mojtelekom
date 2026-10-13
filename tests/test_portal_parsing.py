@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from mojtelekom.adapters import PortalAdapter
+from mojtelekom.adapters import fetch_for
 from mojtelekom.config import Settings
 from mojtelekom.core.portal import (
     _blocker,
@@ -96,10 +96,9 @@ def test_msisdn_normalisation():
     assert parse_msisdn("+385 99 123 4567") == "385991234567"
 
 
-def test_portal_adapter_requires_credentials():
-    adapter = PortalAdapter(Settings(adapter="portal"))
+def test_portal_requires_credentials():
     with pytest.raises(RuntimeError, match="MT_USERNAME"):
-        asyncio.run(adapter.fetch())
+        asyncio.run(fetch_for(Settings(adapter="portal")))
 
 
 # --- forme za prijavu (markup prema stvarnim odgovorima Keycloaka) ---
