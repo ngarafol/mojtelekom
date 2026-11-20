@@ -16,4 +16,4 @@ from .models import (
     normalize_features,
     to_dict,
 )
-from .portal import AuthError, PortalClient
+from .portal import AuthError, PortalClient, PortalUnavailableError

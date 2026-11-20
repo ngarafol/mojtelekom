@@ -70,3 +70,12 @@ def test_entity_ids_get_mojtelekom_prefix():
     assert "def suggested_object_id" in source
     assert 'return f"mojtelekom_{self._msisdn}_{self._feature}"' in source
     assert "national_number(" in source  # ime uređaja: "Moj Telekom 099 8331732"
+
+
+def test_coordinator_tolerates_transient_failures():
+    """Prolazni portal blip ne smije entitete na jedan ciklus baciti u 'nedostupno'."""
+    source = (SENSOR_PY.parent / "coordinator.py").read_text(encoding="utf-8")
+    assert "PortalUnavailableError" in source
+    assert "TRANSIENT_GRACE" in source
+    assert "def _transient" in source
+    assert "return self.data" in source

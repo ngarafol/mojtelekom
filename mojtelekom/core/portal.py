@@ -55,6 +55,22 @@ class AuthError(RuntimeError):
     """Prijava nije prošla: krivi podaci, captcha/2FA ili se login tok promijenio."""
 
 
+class PortalUnavailableError(RuntimeError):
+    """Portal/SSO je privremeno nedostupan (održavanje, WAF, 5xx) — nije naš bug i proći će."""
+
+
+# Portal na održavanju/vlastitoj grešci vrati HTTP 200 s ovom porukom (viđeno u praksi).
+_UNAVAILABLE_MARKERS = (
+    "trenutno nije dostupan zbog tehničkih problema",
+    "portal trenutno nije dostupan",
+)
+
+
+def _looks_unavailable(page: str) -> bool:
+    lowered = page.lower()
+    return any(marker in lowered for marker in _UNAVAILABLE_MARKERS)
+
+
 @dataclass
 class ServiceRef:
     service_type: str
@@ -301,6 +317,10 @@ class PortalClient:
 
         action, payload = parse_form(page)
         if not action:
+            if _looks_unavailable(page):
+                raise PortalUnavailableError(
+                    "Moj Telekom portal je privremeno nedostupan (održavanje?) — pokušat će ponovno."
+                )
             raise AuthError("Na SSO stranici nema login forme — portal je promijenjen ili nije dostupan.")
         self._note(f"3-post-credentials: {action[:160]} | polja {sorted(payload)}")
         payload.update({"username": self._username, "password": self._password})
@@ -364,13 +384,19 @@ class PortalClient:
         session = await self._sess()
         for attempt in (1, 2):
             async with session.get(f"{BASE}{path}") as resp:
-                text = await resp.text()
+                text, status = await resp.text(), resp.status
             self._dump_page(path, text)
+            if status >= 500:
+                raise PortalUnavailableError(f"Portal je vratio HTTP {status} — privremeno nedostupan.")
             if expect in text:
                 return text
             self._note(f"neocekivan sadrzaj: nema {expect!r} na {path[:70]}")
             if attempt == 1:
                 await self._login()
+        if _looks_unavailable(text):
+            raise PortalUnavailableError(
+                "Moj Telekom portal je privremeno nedostupan (održavanje?) — pokušat će ponovno."
+            )
         raise AuthError(f"Portal nije vratio očekivani sadržaj ({expect!r}) — sesija je vjerojatno istekla.")
 
     async def services(self) -> list[ServiceRef]:

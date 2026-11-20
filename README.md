@@ -58,7 +58,7 @@ Za svaki broj na računu dobiješ uređaj (naziv = broj) i senzore:
 | `sensor.mojtelekom_<broj>_aktivne_opcije` | nazivi aktivnih opcija (ili "nema aktivnih") | `aktivne_opcije` |
 | `sensor.mojtelekom_<broj>_status` | `active` | `tarifa`, `aktivne_opcije` |
 
-Svaki senzor u atributima nosi `msisdn` i **`feature`** (`status`/`prepaid`/`usage`/`valid_until`/`options`) — po tome ih template kartice i automatizacije mogu pronaći bez upisivanja entity ID-eva.
+Svaki senzor u atributima nosi i `azurirano` (vrijeme stvarnog dohvata) te `msisdn` i **`feature`** (`status`/`prepaid`/`usage`/`valid_until`/`options`) — po tome ih template kartice i automatizacije mogu pronaći bez upisivanja entity ID-eva.
 
 `<broj>` je međunarodni zapis bez `+`, pa entity ID izgleda npr. `sensor.mojtelekom_385991234567_prepaid_stanje`. **Prefiks `mojtelekom_` je tu namjerno** — lako filtriraš entitete (u tražilici upiši `mojtelekom`) i slažeš kartice (`entity_id: "*mojtelekom*"`). Naziv uređaja je "Moj Telekom 099 1234567", a možeš ga preimenovati (npr. "Markov mobitel").
 
@@ -252,6 +252,7 @@ Sesija se drži između osvježavanja, pa je prijava zapravo rijetka. Kad sesija
 |---|---|
 | Pri dodavanju integracije: *"Prijava nije prošla"* | Prijavi se istim podacima u browseru na portal. Ako traži PIN/2FA, integracija to ne može. |
 | *"Ne mogu se spojiti na Moj Telekom portal"* | Mreža/DNS na HA hostu; je li portal dostupan u browseru. |
+| U dnevniku: *"portal je privremeno nedostupan"* ili *"sesija je vjerojatno istekla"* | Normalno za portal koji se održava ili kad sesija istekne. Integracija zadrži zadnje vrijednosti do 2 ciklusa (30 min) i sama se ponovno prijavi; ako se ponavlja svaki ciklus, pošalji dijagnostiku. |
 | Senzori su *nedostupno* nakon što su radili | Postavke → Sustav → Dnevnik, filter `moj_telekom`. Najčešće istekla sesija (riješi se sama) ili promjena portala. |
 | Vrijednosti izgledaju prazno | Smanji značajke/interval i pogledaj dnevnik; ako portal promijeni HTML, treba ažurirati parser. |
 | Želiš prijaviti problem | **Postavke → Uređaji i servisi → Moj Telekom → ⋮ → Download diagnostics** — vjerodajnice se redaktiraju, brojevi maskiraju na zadnje 3 znamenke. |

@@ -140,6 +140,8 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
             "feature": self._feature,
             "status": number.get("status"),
             "tarifa": number.get("tariff"),
+            # Vrijeme stvarnog dohvata — ako je starije od intervala, podaci su zadržani.
+            "azurirano": number.get("fetched_at"),
         }
         if number.get("options"):
             attrs["aktivne_opcije"] = [
