@@ -167,7 +167,13 @@ title: Moj Telekom
 low_balance: 3        # bon ispod ovog iznosa se prikaže crveno
 ```
 
-Kartica po broju prikazuje: **bon** (crveno ispod `low_balance`), **vrijedi do**, **preostali promet**, **tarifu**, **aktivne opcije** i status ako nije `active`. `title` i `low_balance` su opcionalni.
+Kartica po broju prikazuje:
+- **veliki bon** kao glavnu vrijednost (crveno ispod `low_balance`), a ako bon nema — preostali promet,
+- pločice s ikonama: **vrijedi do**, **preostali promet**, **tarifa** i status (samo ako nije `active`),
+- **aktivne opcije** kao oznake (chips), ili "nema aktivnih opcija",
+- **status točku** (zelena/crvena/siva) i **starost podataka** ("ažurirano prije 7 min") — pa se odmah vidi i ako su vrijednosti zadržane zbog prolazne greške portala.
+
+Boje prate HA temu (svjetla/tamna), s HT magenta akcentom. `title` i `low_balance` su opcionalni; `title: ""` skriva naslov.
 
 ### Ručne kartice (bez dodatka)
 
