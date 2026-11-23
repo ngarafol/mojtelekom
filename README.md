@@ -167,6 +167,20 @@ title: Moj Telekom
 low_balance: 3        # bon ispod ovog iznosa se prikaže crveno
 ```
 
+Ako ne pamtiš koji je broj koji, upiši **svoje oznake (lokacije)** — broj postaje glavni red, a lokacija ispod njega:
+
+```yaml
+type: custom:moj-telekom-card
+title: Moj Telekom
+low_balance: 3
+labels:
+  385998331732: Osobni
+  385998331729: Viktor
+  385998331786: Vikendica
+```
+
+Ključ smije biti u bilo kojem zapisu (`385998331732`, `+385 99 833 1732` ili `099 8331732`), a možeš i samo **preimenovati uređaj** u HA-u (Postavke → Uređaji → Moj Telekom → uređaj → preimenuj) — tada kartica sama pokaže tvoje ime i broj ispod.
+
 Kartica po broju prikazuje:
 - **veliki bon** kao glavnu vrijednost (crveno ispod `low_balance`), a ako bon nema — preostali promet,
 - pločice s ikonama: **vrijedi do**, **preostali promet**, **tarifa** i status (samo ako nije `active`),

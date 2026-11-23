@@ -57,6 +57,12 @@ function pluralBroj(count) {
   return `${count} brojeva`;
 }
 
+/** "385998331732" / "+385 99 833 1732" / "099 8331732" -> "998331732" (za usporedbu). */
+function normalizeMsisdn(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  return digits.replace(/^385/, "").replace(/^0+/, "");
+}
+
 /** Kojoj značajki pripada entitet — iz atributa `feature` na senzoru. */
 function featureOf(hass, entityId) {
   const feature = hass.states?.[entityId]?.attributes?.feature;
@@ -216,11 +222,19 @@ class MojTelekomCard extends HTMLElement {
     const dotClass = statusState == null ? "unknown" : statusState === "active" ? "" : "bad";
     const updated = relTime(status?.attributes.azurirano || prepaid?.attributes.azurirano);
     const national = fmtMsisdn(group.msisdn);
-    const subtitle = national && !String(group.name).includes(national) ? national : "";
+
+    // Vlastita oznaka/lokacija iz konfiguracije kartice ima prednost nad imenom uređaja.
+    // Tada je broj glavni red, a lokacija ispod njega — pa se odmah zna koji je koji.
+    const wanted = normalizeMsisdn(group.msisdn);
+    const label = Object.entries(this._config.labels || {}).find(
+      ([key]) => normalizeMsisdn(key) === wanted,
+    )?.[1];
+    const primary = label ? (national || group.msisdn || group.name) : group.name;
+    const subtitle = label ? label : (national && !String(group.name).includes(national) ? national : "");
 
     return `<div class="tile${low ? " low" : ""}">
       <div class="who"><span class="dot ${dotClass}"></span>
-        <span class="name" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</span></div>
+        <span class="name" title="${escapeHtml(primary)}">${escapeHtml(primary)}</span></div>
       ${subtitle ? `<div class="msisdn">${escapeHtml(subtitle)}</div>` : ""}
 
       <div class="hero">
@@ -279,4 +293,5 @@ window.MojTelekomCard.fmtNumber = fmtNumber;
 window.MojTelekomCard.fmtMsisdn = fmtMsisdn;
 window.MojTelekomCard.relTime = relTime;
 window.MojTelekomCard.pluralBroj = pluralBroj;
+window.MojTelekomCard.normalizeMsisdn = normalizeMsisdn;
 window.MojTelekomCard.version = MOJ_TELEKOM_VERSION;

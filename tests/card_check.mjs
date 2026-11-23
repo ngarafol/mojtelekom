@@ -154,7 +154,23 @@ empty.setConfig({});
 empty.hass = { entities: {}, states: {}, devices: {} };
 assert.match(empty.shadowRoot.innerHTML, /Još nema podataka/);
 
-// 9) broj brojeva u zaglavlju + hrvatski plural
+// 9) vlastita oznaka (lokacija): broj glavni red, lokacija ispod; ključ u bilo kojem formatu
+const labelCard = new Card();
+labelCard.setConfig({ labels: { "099 1234567": "Vikendica" } });   // nacionalni zapis
+labelCard.hass = hass;
+const labelled = labelCard.shadowRoot.innerHTML;
+assert.match(labelled, /class="name" title="099 1234567">099 1234567</, "s oznakom je broj glavni red");
+assert.match(labelled, /class="msisdn">Vikendica</, "lokacija je ispod broja");
+assert.equal(Card.normalizeMsisdn("+385 99 123 4567"), "991234567");
+assert.equal(Card.normalizeMsisdn("385991234567"), "991234567");
+assert.equal(Card.normalizeMsisdn("0991234567"), "991234567");
+
+const intlLabel = new Card();
+intlLabel.setConfig({ labels: { "385991234567": "Ured" } });        // međunarodni zapis
+intlLabel.hass = hass;
+assert.match(intlLabel.shadowRoot.innerHTML, /class="msisdn">Ured</, "ključ smije biti i međunarodni");
+
+// 10) broj brojeva u zaglavlju + hrvatski plural
 assert.match(html, /1 broj/, "zaglavlje prikazuje broj brojeva");
 assert.equal(Card.pluralBroj(1), "1 broj");
 assert.equal(Card.pluralBroj(3), "3 broja");
