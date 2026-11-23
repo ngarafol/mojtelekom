@@ -7,6 +7,7 @@ značajka postoji u `core.FEATURES` (i nudi se u opcijama), ali nema unos u `FEA
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 
 from mojtelekom.core import FEATURES
@@ -79,3 +80,11 @@ def test_coordinator_tolerates_transient_failures():
     assert "TRANSIENT_GRACE" in source
     assert "def _transient" in source
     assert "return self.data" in source
+
+
+def test_card_version_matches_manifest():
+    """Kartica ima vlastiti MOJ_TELEKOM_VERSION — mora pratiti manifest, inače je
+    provjera u konzoli (window.MojTelekomCard.version) beskorisna."""
+    card = (SENSOR_PY.parent / "www" / "moj-telekom-card.js").read_text(encoding="utf-8")
+    manifest = json.loads((SENSOR_PY.parent / "manifest.json").read_text(encoding="utf-8"))
+    assert f'MOJ_TELEKOM_VERSION = "{manifest["version"]}"' in card

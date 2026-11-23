@@ -8,7 +8,7 @@
  *   type: custom:moj-telekom-card
  */
 
-const MOJ_TELEKOM_VERSION = "0.7.0";
+const MOJ_TELEKOM_VERSION = "0.7.2";
 
 // Redoslijed je bitan: "valid_until" sadrži donju crtu, pa se traži prije ostalih.
 const KNOWN_FEATURES = ["valid_until", "prepaid", "usage", "options", "status"];
