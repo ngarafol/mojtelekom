@@ -8,7 +8,7 @@
  *   type: custom:moj-telekom-card
  */
 
-const MOJ_TELEKOM_VERSION = "0.7.2";
+const MOJ_TELEKOM_VERSION = "0.7.3";
 
 // Redoslijed je bitan: "valid_until" sadrži donju crtu, pa se traži prije ostalih.
 const KNOWN_FEATURES = ["valid_until", "prepaid", "usage", "options", "status"];
@@ -275,7 +275,18 @@ class MojTelekomCard extends HTMLElement {
   }
 }
 
-customElements.define("moj-telekom-card", MojTelekomCard);
+const existing = customElements.get("moj-telekom-card");
+if (existing) {
+  // Najčešće znači da je negdje ostala stara kopija (npr. /local/moj-telekom-card.js
+  // dodan kao Lovelace resurs) — prva registracija pobjedi, pa se vidi stari izgled.
+  console.warn(
+    "[Moj Telekom] kartica je već registrirana — vjerojatno postoji stara kopija kao " +
+    "Lovelace resurs (Postavke → Dashboards → Resources). Obriši je i osvježi stranicu.",
+    existing,
+  );
+} else {
+  customElements.define("moj-telekom-card", MojTelekomCard);
+}
 
 // Da se kartica pojavi u izborniku kartica i bude dostupna za testiranje u konzoli.
 window.customCards = window.customCards || [];

@@ -1,6 +1,7 @@
 """Moj Telekom — HA integracija koja čita stanje brojeva s web portala."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from homeassistant.components.frontend import add_extra_js_url
@@ -15,14 +16,25 @@ PLATFORMS = ["sensor"]
 CARD_URL = "/moj_telekom/moj-telekom-card.js"
 
 
+def card_version() -> str:
+    """Verzija iz manifesta — ide u URL kartice da browser ne zadrži stari JS."""
+    try:
+        manifest = json.loads((Path(__file__).parent / "manifest.json").read_text(encoding="utf-8"))
+        return str(manifest.get("version") or "")
+    except (OSError, ValueError):
+        return ""
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Posluži karticu i učitaj je automatski — korisnik je samo doda na dashboard."""
     card_path = Path(__file__).parent / "www" / "moj-telekom-card.js"
-    # Bez cachea: nakon HACS nadogradnje ne ostaje stara kartica u browseru.
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, str(card_path), False)]
+        [StaticPathConfig(CARD_URL, str(card_path), True)]
     )
-    add_extra_js_url(hass, CARD_URL)
+    # ?v=<verzija> mijenja URL pri svakoj nadogradnji, pa stari JS modul ne može ostati
+    # u browseru (prije je to tražilo ručni hard refresh).
+    version = card_version()
+    add_extra_js_url(hass, f"{CARD_URL}?v={version}" if version else CARD_URL)
     return True
 
 

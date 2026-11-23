@@ -22,7 +22,9 @@ def test_card_file_exists_and_is_served():
     init = (INTEGRATION / "__init__.py").read_text(encoding="utf-8")
     assert 'CARD_URL = "/moj_telekom/moj-telekom-card.js"' in init
     assert 'Path(__file__).parent / "www" / "moj-telekom-card.js"' in init
-    assert "add_extra_js_url(hass, CARD_URL)" in init
+    # URL nosi verziju, inače browser zadrži stari JS nakon nadogradnje
+    assert "add_extra_js_url(hass, f\"{CARD_URL}?v={version}\" if version else CARD_URL)" in init
+    assert "def card_version()" in init
 
 
 def test_manifest_declares_frontend_dependency():
@@ -39,3 +41,10 @@ def test_card_logic_in_node():
         timeout=60,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_card_warns_on_duplicate_registration():
+    """Stara kopija kao Lovelace resurs pobijedi registraciju — upozorenje u konzoli pomaže."""
+    source = (INTEGRATION / "www" / "moj-telekom-card.js").read_text(encoding="utf-8")
+    assert 'customElements.get("moj-telekom-card")' in source
+    assert "Lovelace resurs" in source
