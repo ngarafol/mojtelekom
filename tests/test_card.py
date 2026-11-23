@@ -48,3 +48,10 @@ def test_card_warns_on_duplicate_registration():
     source = (INTEGRATION / "www" / "moj-telekom-card.js").read_text(encoding="utf-8")
     assert 'customElements.get("moj-telekom-card")' in source
     assert "Lovelace resurs" in source
+
+
+def test_tile_hover_does_not_move_element():
+    """Pomicanje pločice pod mišem izaziva oscilaciju na rubu — hover mijenja samo stil."""
+    source = (INTEGRATION / "www" / "moj-telekom-card.js").read_text(encoding="utf-8")
+    assert "translateY" not in source
+    assert "if (html !== this._lastHtml)" in source

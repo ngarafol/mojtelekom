@@ -8,7 +8,7 @@
  *   type: custom:moj-telekom-card
  */
 
-const MOJ_TELEKOM_VERSION = "0.7.3";
+const MOJ_TELEKOM_VERSION = "0.7.4";
 
 // Redoslijed je bitan: "valid_until" sadrži donju crtu, pa se traži prije ostalih.
 const KNOWN_FEATURES = ["valid_until", "prepaid", "usage", "options", "status"];
@@ -124,9 +124,10 @@ const STYLES = `
     background:
       linear-gradient(180deg, rgba(224, 0, 116, 0.06), transparent 55%),
       var(--card-background-color);
-    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    transition: box-shadow 140ms ease, border-color 140ms ease;
   }
-  .tile:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+  /* Bez transforma: pomicanje elementa pod mišem izaziva oscilaciju na samom rubu. */
+  .tile:hover { border-color: rgba(224, 0, 116, .55); box-shadow: 0 6px 18px rgba(0,0,0,.16); }
   .tile.low { border-color: var(--error-color); box-shadow: 0 0 0 1px var(--error-color) inset; }
   .tile.offline { opacity: .55; }
 
@@ -180,6 +181,7 @@ class MojTelekomCard extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = { title: "Moj Telekom", low_balance: 3 };
+    this._lastHtml = null;
   }
 
   setConfig(config) {
@@ -259,19 +261,30 @@ class MojTelekomCard extends HTMLElement {
     </div>`;
   }
 
-  _render() {
+  _build() {
     const groups = groupNumbers(this._hass || {});
     const body = groups.length
       ? `<div class="grid">${groups.map((group) => this._tile(group)).join("")}</div>`
       : `<div class="empty">Još nema podataka. Provjeri da je integracija <b>Moj Telekom</b>
          dodana i da joj prvi dohvat nije pao (Dnevnik → moj_telekom).</div>`;
-    this.shadowRoot.innerHTML = `<style>${STYLES}</style><ha-card>
+    return `<style>${STYLES}</style><ha-card>
       <div class="head"><ha-icon icon="mdi:cellphone-message"></ha-icon>
         <span class="title">${escapeHtml(this._config.title || "Moj Telekom")}</span>
         <span class="hint">${pluralBroj(groups.length)}</span>
       </div>
       ${body}
     </ha-card>`;
+  }
+
+  _render() {
+    // DOM mijenjamo samo kad se sadržaj stvarno promijenio. HA šalje `hass` na svaku
+    // promjenu stanja; bez ovoga se kartica ruši i po nekoliko puta u sekundi, pa
+    // hover/animacije "tit raju".
+    const html = this._build();
+    if (html !== this._lastHtml) {
+      this._lastHtml = html;
+      this.shadowRoot.innerHTML = html;
+    }
   }
 }
 

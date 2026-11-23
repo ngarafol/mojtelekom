@@ -7,9 +7,23 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+class ShadowRootStub {
+  constructor() {
+    this._html = "";
+    this.writes = 0;
+  }
+  set innerHTML(value) {
+    this.writes += 1;
+    this._html = value;
+  }
+  get innerHTML() {
+    return this._html;
+  }
+}
+
 class HTMLElementStub {
   constructor() {
-    this.shadowRoot = { innerHTML: "" };
+    this.shadowRoot = new ShadowRootStub();
   }
   attachShadow() {
     return this.shadowRoot;
@@ -178,5 +192,21 @@ assert.equal(Card.pluralBroj(5), "5 brojeva");
 assert.equal(Card.pluralBroj(21), "21 broj");
 assert.equal(Card.pluralBroj(22), "22 broja");
 assert.equal(Card.pluralBroj(11), "11 brojeva");
+
+// 11) bez suvišnog rendera: isti podaci ne smiju dirati DOM (to je uzrok "titranja")
+const stable = new Card();
+stable.setConfig({});
+stable.hass = hass;
+const writes = stable.shadowRoot.writes;
+stable.hass = { ...hass };      // HA šalje novi objekt, ali podaci su isti
+stable.hass = { ...hass };
+assert.equal(stable.shadowRoot.writes, writes, "isti podaci ne smiju ponovno pisati innerHTML");
+
+// a stvarna promjena podataka mora osvježiti karticu
+const changed = structuredClone(hass);
+changed.states["sensor.bprepaid"].state = "1.00";
+stable.hass = changed;
+assert.ok(stable.shadowRoot.writes > writes, "promjena podataka mora osvježiti karticu");
+assert.match(stable.shadowRoot.innerHTML, /class="value">1,00</);
 
 console.log("kartica: sve provjere prošle");
