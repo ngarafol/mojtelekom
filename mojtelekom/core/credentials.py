@@ -17,18 +17,14 @@ ENV_USERNAME = "MT_USERNAME"
 ENV_PASSWORD = "MT_PASSWORD"
 
 
-def resolve_credentials(
-    data: Mapping[str, Any],
-    *,
-    username_key: str = "username",
-    password_key: str = "password",
-) -> tuple[str, str] | None:
+def resolve_credentials(data: Mapping[str, Any]) -> tuple[str, str] | None:
     """Vrati (korisnik, lozinka) ili None ako nešto nedostaje.
 
     Vrijednost iz config entryja ima prednost; ako je nema, gleda se okolina.
+    Ključevi su isti kao u HA config entryju: "username" i "password".
     """
-    username = str(data.get(username_key) or "").strip() or os.environ.get(ENV_USERNAME, "").strip()
-    password = str(data.get(password_key) or "") or os.environ.get(ENV_PASSWORD, "")
+    username = str(data.get("username") or "").strip() or os.environ.get(ENV_USERNAME, "").strip()
+    password = str(data.get("password") or "") or os.environ.get(ENV_PASSWORD, "")
     if not username or not password:
         return None
     return username, password

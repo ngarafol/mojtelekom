@@ -9,15 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import (
-    CONF_FEATURES,
-    CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-    DEFAULT_FEATURES,
-    DEFAULT_SCAN_INTERVAL_MIN,
-    DOMAIN,
-)
+from .const import CONF_FEATURES, CONF_SCAN_INTERVAL, DEFAULT_FEATURES, DEFAULT_SCAN_INTERVAL_MIN, DOMAIN
 from .core import (
     AuthError,
     PortalClient,

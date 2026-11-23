@@ -234,10 +234,13 @@ class PortalClient:
 
     def _note_response(self, label: str, resp: aiohttp.ClientResponse, text: str) -> None:
         chain = " -> ".join(f"{r.status}" for r in (*resp.history, resp))
+        # Izvučeno iz f-stringa: escapirani navodnici u f-stringu traže Python 3.12+.
+        has_code = 'name="code"' in text.lower()
+        has_form = "<form" in text.lower()
         self._note(
             f"{label}: {resp.request_info.method} {resp.request_info.url} | status {resp.status} "
             f"| lanac {chain} | finalni {resp.url} | len {len(text)} "
-            f"| code={'name=\"code\"' in text.lower()} | form={'<form' in text.lower()} "
+            f"| code={has_code} | form={has_form} "
             f"| Location {resp.headers.get('Location')} | Set-Cookie {self._set_cookie_names(resp)}"
         )
 

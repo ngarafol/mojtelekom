@@ -8,7 +8,7 @@
  *   type: custom:moj-telekom-card
  */
 
-const MOJ_TELEKOM_VERSION = "0.7.4";
+const MOJ_TELEKOM_VERSION = "0.7.5";
 
 // Redoslijed je bitan: "valid_until" sadrži donju crtu, pa se traži prije ostalih.
 const KNOWN_FEATURES = ["valid_until", "prepaid", "usage", "options", "status"];
@@ -129,7 +129,6 @@ const STYLES = `
   /* Bez transforma: pomicanje elementa pod mišem izaziva oscilaciju na samom rubu. */
   .tile:hover { border-color: rgba(224, 0, 116, .55); box-shadow: 0 6px 18px rgba(0,0,0,.16); }
   .tile.low { border-color: var(--error-color); box-shadow: 0 0 0 1px var(--error-color) inset; }
-  .tile.offline { opacity: .55; }
 
   .who { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-color, #43a047); flex: none; }
@@ -173,19 +172,20 @@ const ICONS = {
   usage: "mdi:web",
   tariff: "mdi:sim",
   status: "mdi:cellphone",
-  prepaid: "mdi:cash",
 };
+
+const DEFAULT_CONFIG = { title: "Moj Telekom", low_balance: 3 };
 
 class MojTelekomCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._config = { title: "Moj Telekom", low_balance: 3 };
+    this._config = { ...DEFAULT_CONFIG };
     this._lastHtml = null;
   }
 
   setConfig(config) {
-    this._config = { title: "Moj Telekom", low_balance: 3, ...config };
+    this._config = { ...DEFAULT_CONFIG, ...config };
   }
 
   set hass(hass) {

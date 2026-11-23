@@ -11,21 +11,20 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_FEATURES, DEFAULT_FEATURES, DOMAIN
+from .const import CONF_FEATURES, DEFAULT_FEATURES, DOMAIN, FEATURE_LABELS
 from .coordinator import MojTelekomCoordinator
 from .core import FEATURES, national_number, normalize_features
 
 _LOGGER = logging.getLogger(__name__)
 
-# Značajka -> (oznaka, ikona, device class, state class). SAMO značajke koje daju senzor!
-# `options` namjerno nije ovdje: nema svoj senzor, nego dolazi kao atribut `aktivne_opcije`
-# na ostalim senzorima (zato je u core.FEATURES, ali ne u ovoj mapi).
-FEATURE_META: dict[str, tuple[str, str, SensorDeviceClass | None, SensorStateClass | None]] = {
-    "prepaid": ("Prepaid stanje", "mdi:cash", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
-    "usage": ("Preostali promet", "mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
-    "valid_until": ("Vrijedi do", "mdi:calendar-check", SensorDeviceClass.DATE, None),
-    "status": ("Status", "mdi:sim", None, None),
-    "options": ("Aktivne opcije", "mdi:playlist-check", None, None),
+# Značajka -> (ikona, device class, state class). Nazive daje const.FEATURE_LABELS —
+# tako se ime u opcijama i ime entiteta ne mogu razići.
+FEATURE_META: dict[str, tuple[str, SensorDeviceClass | None, SensorStateClass | None]] = {
+    "prepaid": ("mdi:cash", SensorDeviceClass.MONETARY, SensorStateClass.TOTAL),
+    "usage": ("mdi:web", SensorDeviceClass.DATA_SIZE, SensorStateClass.TOTAL),
+    "valid_until": ("mdi:calendar-check", SensorDeviceClass.DATE, None),
+    "status": ("mdi:sim", None, None),
+    "options": ("mdi:playlist-check", None, None),
 }
 SENSOR_FEATURES = tuple(feature for feature in FEATURES if feature in FEATURE_META)
 
@@ -62,8 +61,8 @@ class MojTelekomSensor(CoordinatorEntity[MojTelekomCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._msisdn = msisdn
         self._feature = feature
-        label, icon, device_class, state_class = FEATURE_META[feature]
-        self._attr_name = label
+        icon, device_class, state_class = FEATURE_META[feature]
+        self._attr_name = FEATURE_LABELS[feature]
         self._attr_unique_id = f"{entry.entry_id}_{msisdn}_{feature}"
         self._attr_icon = icon
         self._attr_device_class = device_class
